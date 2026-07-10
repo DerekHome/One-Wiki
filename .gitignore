@@ -1,0 +1,10 @@
+server/.venv/
+server/__pycache__/
+server/app/__pycache__/
+server/tests/__pycache__/
+knowledge.db
+server/storage/
+web/node_modules/
+web/.next/
+web/.env.local
+.env

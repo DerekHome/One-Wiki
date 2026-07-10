@@ -1,0 +1,23 @@
+services:
+  api:
+    build: ./server
+    environment:
+      DATABASE_URL: sqlite:////data/knowledge/knowledge.db
+      FILE_STORAGE_ROOT: /data/knowledge/storage
+      AI_ENABLED: "false"
+    ports:
+      - "8000:8000"
+    volumes:
+      - knowledge-data:/data/knowledge
+  web:
+    build:
+      context: ./web
+      args:
+        NEXT_PUBLIC_API_BASE: http://localhost:8000/api/v1
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  knowledge-data:
