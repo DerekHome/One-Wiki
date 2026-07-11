@@ -2,9 +2,10 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { api, Page, Topic } from "@/lib/api";
+import { RichTextEditor } from "@/components/rich-text-editor";
 
 type Values = { title: string; summary: string; content: string; topic_id: string; tags: string; review_at: string };
-const empty: Values = { title: "", summary: "", content: "# 知识标题\n\n从一句清楚的结论开始。\n\n## 适用范围\n\n说明适用的场景与前置条件。\n\n## 详细说明\n\n补充步骤、示例或相关概念。", topic_id: "", tags: "", review_at: "" };
+const empty: Values = { title: "", summary: "", content: "<h1>知识标题</h1><p>从一句清楚的结论开始。</p><h2>适用范围</h2><p>说明适用的场景与前置条件。</p><h2>详细说明</h2><p>补充步骤、示例或相关概念。</p>", topic_id: "", tags: "", review_at: "" };
 
 export function KnowledgeForm({ pageId }: { pageId?: string }) {
   const [topics, setTopics] = useState<Topic[]>([]); const [values, setValues] = useState<Values>(empty); const [page, setPage] = useState<Page | null>(null); const [error, setError] = useState(""); const [saving, setSaving] = useState(false);
@@ -18,7 +19,7 @@ export function KnowledgeForm({ pageId }: { pageId?: string }) {
     <div className="field"><label>一句话摘要</label><input value={values.summary} onChange={(e) => update("summary", e.target.value)} placeholder="先告诉读者这篇知识解决什么问题" /></div>
     <div className="field"><label>主题</label><select value={values.topic_id} onChange={(e) => update("topic_id", e.target.value)}><option value="">未分类</option>{topics.map((topic) => <option value={topic.id} key={topic.id}>{topic.name}</option>)}</select></div>
     <div className="field"><label>标签</label><input value={values.tags} onChange={(e) => update("tags", e.target.value)} placeholder="用逗号分隔，例如：产品、入门" /></div>
-    <div className="field"><label>正文</label><textarea value={values.content} onChange={(e) => update("content", e.target.value)} required /><span className="helper">第一版使用轻量 Markdown；以 #、##、### 组织层级。</span></div>
+    <div className="field"><label>正文</label><RichTextEditor value={values.content} onChange={(content) => update("content", content)} /><span className="helper">支持标题、列表、引用、表格和图片。图片可使用已上传附件或可信 HTTPS 地址。</span></div>
     {error && <div className="error">{error}</div>}<div className="form-actions"><button className="primary" disabled={saving}>{saving ? "正在保存…" : "保存草稿"}</button>{page && <button type="button" className="secondary" disabled={saving} onClick={publish}>发布版本 {page.current_version + 1}</button>}</div>
   </form>;
 }

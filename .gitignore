@@ -4,6 +4,7 @@ server/app/__pycache__/
 server/tests/__pycache__/
 knowledge.db
 server/storage/
+server/logs/
 web/node_modules/
 web/.next/
 web/.env.local

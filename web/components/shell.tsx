@@ -24,6 +24,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <nav>
           <Link href="/">发现知识</Link>
           <Link href="/search">搜索</Link>
+          {user && <Link href="/favorites">我的收藏</Link>}
           <Link href="/ask">AI 问答</Link>
           {user && ["contributor", "editor", "admin"].includes(user.role) && <Link href="/knowledge/new">创建知识</Link>}
         </nav>

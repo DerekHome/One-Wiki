@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import logging
 import re
+import time
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Annotated
 
 import httpx
-from fastapi import Cookie, Depends, FastAPI, File, HTTPException, Query, Response, UploadFile
+import bleach
+from fastapi import Cookie, Depends, FastAPI, File, HTTPException, Query, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -18,6 +22,32 @@ from .db import Base, engine, get_db
 from .models import Favorite, FileAsset, KnowledgePage, PageTag, PageVersion, SessionToken, Tag, Topic, User
 from .security import hash_password, new_token, token_hash, verify_password
 from .storage import storage
+
+
+LOG_DIR = Path(__file__).resolve().parent.parent / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+    handlers=[logging.StreamHandler(), logging.FileHandler(LOG_DIR / "one-wiki.log", encoding="utf-8")],
+)
+logger = logging.getLogger("one_wiki")
+
+
+ALLOWED_CONTENT_TAGS = set(bleach.sanitizer.ALLOWED_TAGS) | {
+    "p", "br", "h1", "h2", "h3", "blockquote", "pre", "code", "hr",
+    "ul", "ol", "li", "table", "thead", "tbody", "tr", "th", "td", "img",
+}
+ALLOWED_CONTENT_ATTRIBUTES = {
+    "a": ["href", "title", "target", "rel"],
+    "img": ["src", "alt", "title", "width", "height"],
+    "th": ["colspan", "rowspan"],
+    "td": ["colspan", "rowspan"],
+}
+
+
+def sanitize_content(content: str) -> str:
+    return bleach.clean(content, tags=ALLOWED_CONTENT_TAGS, attributes=ALLOWED_CONTENT_ATTRIBUTES, protocols=["http", "https", "mailto"], strip=True)
 
 
 def slugify(value: str) -> str:
@@ -98,7 +128,8 @@ def current_user(
     if not kp_session:
         raise HTTPException(401, "请先登录")
     session = db.scalar(select(SessionToken).where(SessionToken.token_hash == token_hash(kp_session)))
-    if session is None or session.expires_at < utcnow():
+    expires_at = session.expires_at.replace(tzinfo=timezone.utc) if session and session.expires_at.tzinfo is None else session.expires_at if session else None
+    if session is None or expires_at < utcnow():
         raise HTTPException(401, "登录已过期")
     user = db.get(User, session.user_id)
     if user is None or not user.is_active:
@@ -200,6 +231,19 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def log_request(request: Request, call_next):
+    started_at = time.perf_counter()
+    try:
+        response = await call_next(request)
+    except Exception:
+        logger.exception("request_failed method=%s path=%s", request.method, request.url.path)
+        raise
+    elapsed_ms = (time.perf_counter() - started_at) * 1000
+    logger.info("request_completed method=%s path=%s status=%s duration_ms=%.1f", request.method, request.url.path, response.status_code, elapsed_ms)
+    return response
+
+
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "knowledge-platform"}
@@ -209,11 +253,13 @@ def health():
 def login(payload: LoginInput, response: Response, db: Annotated[Session, Depends(get_db)]):
     user = db.scalar(select(User).where(User.email == payload.email.lower().strip()))
     if user is None or not user.is_active or not verify_password(payload.password, user.password_hash):
+        logger.warning("login_failed")
         raise HTTPException(401, "邮箱或密码错误")
     token = new_token()
     db.add(SessionToken(token_hash=token_hash(token), user_id=user.id, expires_at=utcnow() + timedelta(days=SESSION_DAYS)))
     db.commit()
     response.set_cookie("kp_session", token, httponly=True, samesite="lax", secure=False, max_age=SESSION_DAYS * 86400)
+    logger.info("login_succeeded user_id=%s role=%s", user.id, user.role)
     return {"user": {"id": user.id, "name": user.display_name, "email": user.email, "role": user.role}}
 
 
@@ -222,6 +268,7 @@ def logout(response: Response, db: Annotated[Session, Depends(get_db)], kp_sessi
     if kp_session:
         db.query(SessionToken).filter(SessionToken.token_hash == token_hash(kp_session)).delete()
         db.commit()
+        logger.info("logout_succeeded")
     response.delete_cookie("kp_session")
     return {"ok": True}
 
@@ -245,6 +292,7 @@ def create_topic(payload: TopicInput, db: Annotated[Session, Depends(get_db)], _
     db.add(topic)
     db.commit()
     db.refresh(topic)
+    logger.info("topic_created topic_id=%s actor_id=%s", topic.id, _.id)
     return {"id": topic.id, "name": topic.name, "slug": topic.slug, "description": topic.description}
 
 
@@ -289,13 +337,14 @@ def create_page(payload: PageInput, db: Annotated[Session, Depends(get_db)], use
     if payload.topic_id and db.get(Topic, payload.topic_id) is None:
         raise HTTPException(422, "主题不存在")
     page = KnowledgePage(
-        slug=ensure_unique_slug(db, payload.title), title=payload.title.strip(), summary=payload.summary.strip(), content=payload.content,
+        slug=ensure_unique_slug(db, payload.title), title=payload.title.strip(), summary=payload.summary.strip(), content=sanitize_content(payload.content),
         topic_id=payload.topic_id, owner_id=user.id, review_at=payload.review_at,
     )
     db.add(page)
     db.flush()
     set_page_tags(db, page, payload.tags)
     db.commit()
+    logger.info("page_created page_id=%s actor_id=%s", page.id, user.id)
     return serialize_page(db, page)
 
 
@@ -308,11 +357,12 @@ def update_page(page_id: str, payload: PageInput, db: Annotated[Session, Depends
         raise HTTPException(403, "只能编辑自己创建的知识")
     if payload.topic_id and db.get(Topic, payload.topic_id) is None:
         raise HTTPException(422, "主题不存在")
-    page.title, page.summary, page.content = payload.title.strip(), payload.summary.strip(), payload.content
+    page.title, page.summary, page.content = payload.title.strip(), payload.summary.strip(), sanitize_content(payload.content)
     page.slug, page.topic_id, page.review_at = ensure_unique_slug(db, payload.title, page.id), payload.topic_id, payload.review_at
     set_page_tags(db, page, payload.tags)
     db.commit()
     db.refresh(page)
+    logger.info("page_updated page_id=%s actor_id=%s", page.id, user.id)
     return serialize_page(db, page)
 
 
@@ -327,6 +377,7 @@ def publish_page(page_id: str, payload: PublishInput, db: Annotated[Session, Dep
     page.status = "published"
     db.add(PageVersion(page_id=page.id, version_no=page.current_version, title=page.title, summary=page.summary, content=page.content, change_note=payload.change_note, created_by=user.id))
     db.commit()
+    logger.info("page_published page_id=%s version=%s actor_id=%s", page.id, page.current_version, user.id)
     return serialize_page(db, page)
 
 
@@ -339,6 +390,7 @@ def archive_page(page_id: str, db: Annotated[Session, Depends(get_db)], user: An
         raise HTTPException(403, "只能归档自己创建的知识")
     page.status = "archived"
     db.commit()
+    logger.info("page_archived page_id=%s actor_id=%s", page.id, user.id)
     return {"ok": True}
 
 
@@ -377,7 +429,20 @@ def toggle_favorite(page_id: str, db: Annotated[Session, Depends(get_db)], user:
         db.add(Favorite(user_id=user.id, page_id=page_id))
         active = True
     db.commit()
+    logger.info("favorite_toggled page_id=%s actor_id=%s active=%s", page_id, user.id, active)
     return {"active": active}
+
+
+@app.get("/api/v1/favorites")
+def list_favorites(db: Annotated[Session, Depends(get_db)], user: Annotated[User, Depends(current_user)]):
+    pages = db.scalars(
+        select(KnowledgePage)
+        .join(Favorite, Favorite.page_id == KnowledgePage.id)
+        .where(Favorite.user_id == user.id)
+        .where(KnowledgePage.status == "published")
+        .order_by(desc(Favorite.created_at))
+    ).all()
+    return [serialize_page(db, page) for page in pages]
 
 
 @app.post("/api/v1/files")
@@ -397,6 +462,7 @@ async def upload_file(
     asset = FileAsset(storage_key=storage_key, original_name=name, content_type=file.content_type or "application/octet-stream", size=size, sha256=sha256, uploaded_by=user.id, page_id=page_id)
     db.add(asset)
     db.commit()
+    logger.info("file_uploaded file_id=%s page_id=%s actor_id=%s size=%s", asset.id, page_id, user.id, size)
     return {"id": asset.id, "name": asset.original_name, "size": asset.size, "sha256": asset.sha256}
 
 
@@ -421,8 +487,10 @@ async def answer(payload: AnswerInput, db: Annotated[Session, Depends(get_db)], 
     pages = retrieve_pages(db, payload.question)
     citations = [{"title": page.title, "slug": page.slug, "excerpt": (page.summary or page.content[:160]).replace("\n", " ")} for page in pages]
     if not pages:
+        logger.info("ai_answer_no_evidence")
         return {"answer": "现有知识库中没有足够依据回答这个问题。", "citations": [], "mode": "grounded"}
     if not (AI_ENABLED and LLM_BASE_URL and LLM_API_KEY and LLM_MODEL):
+        logger.info("ai_answer_search_fallback citations=%s", len(citations))
         joined = "\n".join(f"- {item['title']}：{item['excerpt']}" for item in citations)
         return {"answer": f"AI 服务尚未配置。以下是与问题最相关的已发布知识：\n{joined}", "citations": citations, "mode": "search-fallback"}
     context = "\n\n".join(f"[来源：{page.title}]\n{page.content[:3500]}" for page in pages)
@@ -434,7 +502,9 @@ async def answer(payload: AnswerInput, db: Annotated[Session, Depends(get_db)], 
             response.raise_for_status()
             answer_text = response.json()["choices"][0]["message"]["content"]
     except Exception:
+        logger.exception("ai_answer_provider_failed")
         raise HTTPException(502, "AI 服务暂时不可用")
+    logger.info("ai_answer_generated citations=%s", len(citations))
     return {"answer": answer_text, "citations": citations, "mode": "llm"}
 
 

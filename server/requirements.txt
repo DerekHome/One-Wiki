@@ -4,3 +4,4 @@ sqlalchemy>=2.0
 python-multipart>=0.0.20
 httpx>=0.28
 pytest>=8.0
+bleach>=6.0
