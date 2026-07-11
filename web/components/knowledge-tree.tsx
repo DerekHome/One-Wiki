@@ -81,7 +81,7 @@ export function KnowledgeTree() {
 
   useEffect(() => {
     api<Topic[]>("/topics").then(setTopics).catch(() => setTopics([]));
-    api<Page[]>("/pages?limit=200").then(setPages).catch(() => setPages([]));
+    api<Page[]>("/pages?limit=100").then(setPages).catch(() => setPages([]));
   }, []);
 
   useEffect(() => {
@@ -102,7 +102,7 @@ export function KnowledgeTree() {
     <section className="knowledge-tree">
       <div className="tree-head">
         <h2>知识目录</h2>
-        <Link href="/">全部</Link>
+        <Link href="/knowledge/new">新增知识</Link>
       </div>
       <ul className="tree-root">
         {tree.map((node) => <TopicBranch node={node} activeTopic={activeTopic} key={node.id} />)}

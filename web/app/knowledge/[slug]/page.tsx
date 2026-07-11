@@ -30,9 +30,18 @@ export default function KnowledgePage() {
     try { const result = await api<{ active: boolean }>(`/pages/${page.id}/favorite`, { method: "POST" }); setFavorite(result.active); }
     catch (cause) { setError(cause instanceof Error ? cause.message : "收藏失败"); }
   }
+  async function publishPage() {
+    if (!page) return;
+    try {
+      const result = await api<Page>(`/pages/${page.id}/publish`, { method: "POST", body: JSON.stringify({ change_note: "发布知识" }) });
+      setPage(result);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "发布失败");
+    }
+  }
   if (error) return <Shell><div className="empty">{error}。请先登录或返回首页。</div></Shell>;
   if (!page) return <Shell><div className="empty">正在加载知识…</div></Shell>;
-  return <Shell><header className="page-header"><Link href="/" className="crumb">知识库 / {page.topic?.name ?? "未分类"}</Link><div className="page-title-row"><h1>{page.title}</h1><div className="page-actions">{user && ["contributor", "editor", "admin"].includes(user.role) && <Link className="edit-link" href={`/knowledge/${page.id}/edit`}>编辑知识</Link>}<button type="button" className={`favorite-button${favorite ? " active" : ""}`} onClick={toggleFavorite} aria-pressed={favorite}>{favorite ? "已收藏" : "收藏"}</button></div></div><p className="summary">{page.summary}</p>
-    <div className="meta-row"><span>负责人：{page.owner?.name ?? "未设置"}</span><span>已验证版本 {page.current_version}</span><span>更新于 {formatDate(page.updated_at)}</span>{page.tags.map((tag) => <span className="tag" key={tag}>#{tag}</span>)}</div>
+  return <Shell><header className="page-header"><Link href="/" className="crumb">知识库 / {page.topic?.name ?? "未分类"}</Link><div className="page-title-row"><h1>{page.title}</h1><div className="page-actions">{user && ["contributor", "editor", "admin"].includes(user.role) && page.status !== "published" && <button type="button" className="publish-link" onClick={publishPage}>发布知识</button>}{user && ["contributor", "editor", "admin"].includes(user.role) && <Link className="edit-link" href={`/knowledge/${page.id}/edit`}>编辑知识</Link>}<button type="button" className={`favorite-button${favorite ? " active" : ""}`} onClick={toggleFavorite} aria-pressed={favorite}>{favorite ? "已收藏" : "收藏"}</button></div></div><p className="summary">{page.summary}</p>
+    <div className="meta-row"><span>负责人：{page.owner?.name ?? "未设置"}</span><span>{page.status === "published" ? `已验证版本 ${page.current_version}` : "草稿，尚未发布"}</span><span>更新于 {formatDate(page.updated_at)}</span>{page.tags.map((tag) => <span className="tag" key={tag}>#{tag}</span>)}</div>
   </header><Content text={page.content} /><AttachmentLibrary pageId={page.id} /></Shell>;
 }

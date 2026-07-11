@@ -13,7 +13,7 @@ export function KnowledgeForm({ pageId }: { pageId?: string }) {
   useEffect(() => { api<Topic[]>("/topics").then(setTopics).catch(() => {}); if (pageId) api<Page>(`/pages/id/${pageId}`).then((item) => { setPage(item); setValues({ title:item.title, summary:item.summary, content:item.content, topic_id:item.topic?.id ?? "", tags:item.tags.join(", "), review_at:"" }); }).catch((e) => setError(e.message)); }, [pageId]);
   function update(field: keyof Values, value: string) { setValues((old) => ({...old, [field]: value})); }
   const payload = () => ({ title: values.title, summary: values.summary, content: values.content, topic_id: values.topic_id || null, tags: values.tags.split(/[,，]/).map((v) => v.trim()).filter(Boolean), review_at: values.review_at ? new Date(values.review_at).toISOString() : null });
-  async function save(event: FormEvent) { event.preventDefault(); setSaving(true); setError(""); try { const result = pageId ? await api<Page>(`/pages/${pageId}`, {method:"PUT", body:JSON.stringify(payload())}) : await api<Page>("/pages", {method:"POST", body:JSON.stringify(payload())}); window.location.href = `/knowledge/${result.slug}`; } catch (e) { setError(e instanceof Error ? e.message : "保存失败"); } finally { setSaving(false); } }
+  async function save(event: FormEvent) { event.preventDefault(); setSaving(true); setError(""); try { let result = pageId ? await api<Page>(`/pages/${pageId}`, {method:"PUT", body:JSON.stringify(payload())}) : await api<Page>("/pages", {method:"POST", body:JSON.stringify(payload())}); if (!pageId) result = await api<Page>(`/pages/${result.id}/publish`, {method:"POST", body:JSON.stringify({change_note:"创建并发布知识"})}); window.location.href = `/knowledge/${result.slug}`; } catch (e) { setError(e instanceof Error ? e.message : "保存失败"); } finally { setSaving(false); } }
   async function publish() { if (!pageId) return; setSaving(true); setError(""); try { const result = await api<Page>(`/pages/${pageId}/publish`, {method:"POST", body:JSON.stringify({change_note:"更新知识内容"})}); window.location.href = `/knowledge/${result.slug}`; } catch (e) { setError(e instanceof Error ? e.message : "发布失败"); } finally { setSaving(false); } }
   return <form className="form-grid" onSubmit={save}>
     <div className="form-meta-grid">
@@ -24,6 +24,6 @@ export function KnowledgeForm({ pageId }: { pageId?: string }) {
     </div>
     <div className="field content-field"><label>正文</label><RichTextEditor value={values.content} onChange={(content) => update("content", content)} /><span className="helper">支持标题、列表、引用、表格和图片。图片可使用已上传附件或可信 HTTPS 地址。</span></div>
     {page && <AttachmentLibrary pageId={page.id} editable />}
-    {error && <div className="error">{error}</div>}<div className="form-actions"><button className="primary" disabled={saving}>{saving ? "正在保存…" : "保存草稿"}</button>{page && <button type="button" className="secondary" disabled={saving} onClick={publish}>发布版本 {page.current_version + 1}</button>}</div>
+    {error && <div className="error">{error}</div>}<div className="form-actions"><button className="primary" disabled={saving}>{saving ? "正在保存…" : pageId ? "保存草稿" : "发布知识"}</button>{page && <button type="button" className="secondary" disabled={saving} onClick={publish}>发布版本 {page.current_version + 1}</button>}</div>
   </form>;
 }

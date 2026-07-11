@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CaretRight, Funnel, MagnifyingGlass, Star } from "@phosphor-icons/react";
+import { MagnifyingGlass } from "@phosphor-icons/react";
 import { PageCard } from "@/components/page-card";
 import { Shell } from "@/components/shell";
 import { api, Page, Topic } from "@/lib/api";
@@ -14,13 +14,15 @@ function HomeContent() {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [pages, setPages] = useState<Page[]>([]);
   const [query, setQuery] = useState("");
+  const [timeRange, setTimeRange] = useState("all");
+  const [sortOrder, setSortOrder] = useState("newest");
 
   useEffect(() => {
     api<Topic[]>("/topics").then(setTopics).catch(() => setTopics([]));
   }, []);
 
   useEffect(() => {
-    api<Page[]>("/pages?limit=200").then(setPages).catch(() => setPages([]));
+    api<Page[]>("/pages?limit=100").then(setPages).catch(() => setPages([]));
   }, []);
 
   const activeTopic = useMemo(() => topics.find((topic) => topic.id === selectedTopic), [selectedTopic, topics]);
@@ -41,25 +43,57 @@ function HomeContent() {
     return pages.filter((page) => page.topic?.id && topicIds.has(page.topic.id));
   }, [pages, selectedTopic, topics]);
 
-  function search(event: FormEvent) {
-    event.preventDefault();
-    if (query.trim()) window.location.href = `/search?q=${encodeURIComponent(query.trim())}`;
-  }
+  const filteredPages = useMemo(() => {
+    const keyword = query.trim().toLowerCase();
+    const now = Date.now();
+    const days = timeRange === "all" ? null : Number(timeRange);
+
+    return visiblePages
+      .filter((page) => {
+        if (!keyword) return true;
+        const searchable = [page.title, page.summary, page.topic?.name ?? "", page.tags.join(" "), page.content].join(" ").toLowerCase();
+        return searchable.includes(keyword);
+      })
+      .filter((page) => {
+        if (!days) return true;
+        const updatedAt = new Date(page.updated_at).getTime();
+        return now - updatedAt <= days * 24 * 60 * 60 * 1000;
+      })
+      .sort((left, right) => {
+        const diff = new Date(right.updated_at).getTime() - new Date(left.updated_at).getTime();
+        return sortOrder === "newest" ? diff : -diff;
+      });
+  }, [query, sortOrder, timeRange, visiblePages]);
 
   return <Shell>
-    <section className="dashboard-welcome">
-      <CaretRight size={17} weight="fill" /><div><strong>欢迎来到智识库</strong><p>从这里浏览、沉淀和复用团队的重要资源。</p></div>
-    </section>
-    <section className="section">
-      <div className="resource-toolbar"><div className="resource-title"><Star size={17} weight="fill" />团队资源</div><form className="resource-search" onSubmit={search}><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索资源" aria-label="搜索知识" /><button aria-label="搜索"><MagnifyingGlass size={17} /></button></form><Funnel className="toolbar-icon" size={17} /></div>
-      <div className="topics">
-        <Link className={`topic-chip${selectedTopic ? "" : " active"}`} href="/">全部</Link>
-        {topics.map((topic) => <Link className={`topic-chip${selectedTopic === topic.id ? " active" : ""}`} key={topic.id} href={`/?topic=${topic.id}`}>{topic.name}</Link>)}
+    <section className="section section-compact">
+      <div className="resource-filters" aria-label="知识筛选">
+        <label className="filter-search">
+          <MagnifyingGlass size={16} />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="按标题、摘要、标签或正文筛选" aria-label="按关键字筛选知识" />
+        </label>
+        <label>
+          <span>更新时间</span>
+          <select value={timeRange} onChange={(event) => setTimeRange(event.target.value)} aria-label="按更新时间筛选">
+            <option value="all">全部时间</option>
+            <option value="7">最近 7 天</option>
+            <option value="30">最近 30 天</option>
+            <option value="90">最近 90 天</option>
+          </select>
+        </label>
+        <label>
+          <span>排序</span>
+          <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value)} aria-label="排序方式">
+            <option value="newest">最新优先</option>
+            <option value="oldest">最早优先</option>
+          </select>
+        </label>
+        <span className="filter-count">{filteredPages.length} 条</span>
       </div>
     </section>
     <section className="section resource-section">
-      <div className="section-head"><h2>{activeTopic ? activeTopic.name : "最近更新"}</h2>{selectedTopic ? <Link href="/">返回全部</Link> : <Link href="/search">查看全部</Link>}</div>
-      {visiblePages.length ? <div className="cards">{visiblePages.map((page) => <PageCard page={page} key={page.id} />)}</div> : <div className="empty">{selectedTopic ? "这个目录下还没有发布知识。" : "登录后即可浏览团队知识。"}</div>}
+      <div className="section-head"><h2>{activeTopic ? activeTopic.name : "最近更新"}</h2><Link href="/knowledge/new">新增知识</Link></div>
+      {filteredPages.length ? <div className="cards">{filteredPages.map((page) => <PageCard page={page} key={page.id} />)}</div> : <div className="empty">{visiblePages.length ? "没有符合当前筛选条件的知识。" : selectedTopic ? "这个目录下还没有发布知识。" : "登录后即可浏览团队知识。"}</div>}
     </section>
   </Shell>;
 }
