@@ -31,3 +31,13 @@ def test_user_can_favorite_and_list_published_knowledge():
 
 def test_page_content_is_sanitized_before_storage():
     assert sanitize_content("<p>可信内容</p><script>alert('xss')</script>") == "<p>可信内容</p>alert('xss')"
+
+
+def test_user_can_list_page_attachments():
+    with TestClient(app) as client:
+        login = client.post("/api/v1/auth/login", json={"email": "admin@example.com", "password": "ChangeMe123!"})
+        assert login.status_code == 200
+        page = client.get("/api/v1/pages").json()[0]
+        files = client.get(f"/api/v1/pages/{page['id']}/files")
+        assert files.status_code == 200
+        assert files.json() == []

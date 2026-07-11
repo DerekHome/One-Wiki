@@ -1,12 +1,13 @@
 export const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000/api/v1";
 
-export type Topic = { id: string; name: string; slug: string; description: string };
+export type Topic = { id: string; name: string; slug: string; description: string; parent_id: string | null };
 export type Page = {
   id: string; slug: string; title: string; summary: string; content: string; status: string;
   topic: Topic | null; tags: string[]; current_version: number; updated_at: string;
   owner: { name: string; email: string } | null;
 };
 export type User = { id: string; name: string; email: string; role: string };
+export type FileAsset = { id: string; name: string; content_type: string; size: number; sha256: string; created_at: string };
 
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);

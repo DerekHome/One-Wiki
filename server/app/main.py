@@ -101,6 +101,17 @@ def page_tags(db: Session, page_id: str) -> list[str]:
     )
 
 
+def serialize_file(asset: FileAsset) -> dict:
+    return {
+        "id": asset.id,
+        "name": asset.original_name,
+        "content_type": asset.content_type,
+        "size": asset.size,
+        "sha256": asset.sha256,
+        "created_at": asset.created_at,
+    }
+
+
 def serialize_page(db: Session, page: KnowledgePage) -> dict:
     topic = db.get(Topic, page.topic_id) if page.topic_id else None
     owner = db.get(User, page.owner_id)
@@ -463,7 +474,16 @@ async def upload_file(
     db.add(asset)
     db.commit()
     logger.info("file_uploaded file_id=%s page_id=%s actor_id=%s size=%s", asset.id, page_id, user.id, size)
-    return {"id": asset.id, "name": asset.original_name, "size": asset.size, "sha256": asset.sha256}
+    return serialize_file(asset)
+
+
+@app.get("/api/v1/pages/{page_id}/files")
+def list_page_files(page_id: str, db: Annotated[Session, Depends(get_db)], user: Annotated[User, Depends(current_user)]):
+    page = db.get(KnowledgePage, page_id)
+    if page is None or (page.status != "published" and user.role not in {"editor", "admin"} and page.owner_id != user.id):
+        raise HTTPException(404, "知识页面不存在")
+    assets = db.scalars(select(FileAsset).where(FileAsset.page_id == page.id).order_by(desc(FileAsset.created_at))).all()
+    return [serialize_file(asset) for asset in assets]
 
 
 @app.get("/api/v1/files/{file_id}")

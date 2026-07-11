@@ -1,20 +1,45 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { CaretRight, Funnel, MagnifyingGlass, Star } from "@phosphor-icons/react";
 import { PageCard } from "@/components/page-card";
 import { Shell } from "@/components/shell";
 import { api, Page, Topic } from "@/lib/api";
 
-export default function HomePage() {
+function HomeContent() {
+  const searchParams = useSearchParams();
+  const selectedTopic = searchParams.get("topic");
   const [topics, setTopics] = useState<Topic[]>([]);
   const [pages, setPages] = useState<Page[]>([]);
   const [query, setQuery] = useState("");
 
   useEffect(() => {
     api<Topic[]>("/topics").then(setTopics).catch(() => setTopics([]));
-    api<Page[]>("/pages").then(setPages).catch(() => setPages([]));
   }, []);
+
+  useEffect(() => {
+    api<Page[]>("/pages?limit=200").then(setPages).catch(() => setPages([]));
+  }, []);
+
+  const activeTopic = useMemo(() => topics.find((topic) => topic.id === selectedTopic), [selectedTopic, topics]);
+  const visiblePages = useMemo(() => {
+    if (!selectedTopic) return pages;
+    const childMap = new Map<string, string[]>();
+    topics.forEach((topic) => {
+      if (!topic.parent_id) return;
+      childMap.set(topic.parent_id, [...(childMap.get(topic.parent_id) ?? []), topic.id]);
+    });
+
+    const topicIds = new Set<string>();
+    const visit = (topicId: string) => {
+      topicIds.add(topicId);
+      (childMap.get(topicId) ?? []).forEach(visit);
+    };
+    visit(selectedTopic);
+    return pages.filter((page) => page.topic?.id && topicIds.has(page.topic.id));
+  }, [pages, selectedTopic, topics]);
 
   function search(event: FormEvent) {
     event.preventDefault();
@@ -22,22 +47,23 @@ export default function HomePage() {
   }
 
   return <Shell>
-    <section className="hero">
-      <span className="eyebrow">团队知识平台</span>
-      <h1>每个答案，都有可信来源。</h1>
-      <p>从主题浏览、关键词搜索或 AI 问答开始，让团队知识更容易发现、理解和复用。</p>
-      <form className="search-box" onSubmit={search}>
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索知识，例如：产品定位、客户价值、使用方法" aria-label="搜索知识" />
-        <button>搜索</button>
-      </form>
+    <section className="dashboard-welcome">
+      <CaretRight size={17} weight="fill" /><div><strong>欢迎来到智识库</strong><p>从这里浏览、沉淀和复用团队的重要资源。</p></div>
     </section>
     <section className="section">
-      <div className="section-head"><h2>按主题探索</h2></div>
-      <div className="topics">{topics.map((topic) => <Link className="topic-chip" key={topic.id} href={`/search?topic=${topic.id}`}>{topic.name}</Link>)}</div>
+      <div className="resource-toolbar"><div className="resource-title"><Star size={17} weight="fill" />团队资源</div><form className="resource-search" onSubmit={search}><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索资源" aria-label="搜索知识" /><button aria-label="搜索"><MagnifyingGlass size={17} /></button></form><Funnel className="toolbar-icon" size={17} /></div>
+      <div className="topics">
+        <Link className={`topic-chip${selectedTopic ? "" : " active"}`} href="/">全部</Link>
+        {topics.map((topic) => <Link className={`topic-chip${selectedTopic === topic.id ? " active" : ""}`} key={topic.id} href={`/?topic=${topic.id}`}>{topic.name}</Link>)}
+      </div>
     </section>
-    <section className="section">
-      <div className="section-head"><h2>最近更新</h2><Link href="/search">查看全部</Link></div>
-      {pages.length ? <div className="cards">{pages.map((page) => <PageCard page={page} key={page.id} />)}</div> : <div className="empty">登录后即可浏览团队知识。</div>}
+    <section className="section resource-section">
+      <div className="section-head"><h2>{activeTopic ? activeTopic.name : "最近更新"}</h2>{selectedTopic ? <Link href="/">返回全部</Link> : <Link href="/search">查看全部</Link>}</div>
+      {visiblePages.length ? <div className="cards">{visiblePages.map((page) => <PageCard page={page} key={page.id} />)}</div> : <div className="empty">{selectedTopic ? "这个目录下还没有发布知识。" : "登录后即可浏览团队知识。"}</div>}
     </section>
   </Shell>;
+}
+
+export default function HomePage() {
+  return <Suspense fallback={null}><HomeContent /></Suspense>;
 }

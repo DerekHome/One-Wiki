@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Shell } from "@/components/shell";
-import { api, formatDate, Page } from "@/lib/api";
+import { AttachmentLibrary } from "@/components/attachment-library";
+import { api, formatDate, Page, User } from "@/lib/api";
 
 function Content({ text }: { text: string }) {
   if (/<\/?[a-z][\s\S]*>/i.test(text)) return <article className="content rich-text-content" dangerouslySetInnerHTML={{ __html: text }} />;
@@ -18,10 +19,11 @@ function Content({ text }: { text: string }) {
 }
 
 export default function KnowledgePage() {
-  const params = useParams<{ slug: string }>(); const [page, setPage] = useState<Page | null>(null); const [favorite, setFavorite] = useState(false); const [error, setError] = useState("");
+  const params = useParams<{ slug: string }>(); const [page, setPage] = useState<Page | null>(null); const [favorite, setFavorite] = useState(false); const [user, setUser] = useState<User | null>(null); const [error, setError] = useState("");
   useEffect(() => {
     api<Page>(`/pages/${params.slug}`).then(setPage).catch((e) => setError(e.message));
     api<Page[]>("/favorites").then((items) => setFavorite(items.some((item) => item.slug === params.slug))).catch(() => setFavorite(false));
+    api<User>("/auth/me").then(setUser).catch(() => setUser(null));
   }, [params.slug]);
   async function toggleFavorite() {
     if (!page) return;
@@ -30,7 +32,7 @@ export default function KnowledgePage() {
   }
   if (error) return <Shell><div className="empty">{error}。请先登录或返回首页。</div></Shell>;
   if (!page) return <Shell><div className="empty">正在加载知识…</div></Shell>;
-  return <Shell><header className="page-header"><Link href="/" className="crumb">知识库 / {page.topic?.name ?? "未分类"}</Link><div className="page-title-row"><h1>{page.title}</h1><button type="button" className={`favorite-button${favorite ? " active" : ""}`} onClick={toggleFavorite} aria-pressed={favorite}>{favorite ? "已收藏" : "收藏"}</button></div><p className="summary">{page.summary}</p>
+  return <Shell><header className="page-header"><Link href="/" className="crumb">知识库 / {page.topic?.name ?? "未分类"}</Link><div className="page-title-row"><h1>{page.title}</h1><div className="page-actions">{user && ["contributor", "editor", "admin"].includes(user.role) && <Link className="edit-link" href={`/knowledge/${page.id}/edit`}>编辑知识</Link>}<button type="button" className={`favorite-button${favorite ? " active" : ""}`} onClick={toggleFavorite} aria-pressed={favorite}>{favorite ? "已收藏" : "收藏"}</button></div></div><p className="summary">{page.summary}</p>
     <div className="meta-row"><span>负责人：{page.owner?.name ?? "未设置"}</span><span>已验证版本 {page.current_version}</span><span>更新于 {formatDate(page.updated_at)}</span>{page.tags.map((tag) => <span className="tag" key={tag}>#{tag}</span>)}</div>
-  </header><Content text={page.content} /></Shell>;
+  </header><Content text={page.content} /><AttachmentLibrary pageId={page.id} /></Shell>;
 }
