@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { BookmarkSimple, SignOut, Sparkle } from "@phosphor-icons/react";
+import { BookmarkSimple, ShieldCheck, SignOut, Sparkle } from "@phosphor-icons/react";
 import { api, User } from "@/lib/api";
 import { KnowledgeTree } from "@/components/knowledge-tree";
 
@@ -29,6 +29,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <aside className="sidebar">
         <KnowledgeTree />
         <nav className="dashboard-nav sidebar-actions">
+          {user?.role === "admin" && <Link href="/admin/permissions"><ShieldCheck size={17} weight="fill" />&#x6743;&#x9650;&#x7ba1;&#x7406;</Link>}
           {user && <Link href="/favorites"><BookmarkSimple size={17} weight="fill" />我的收藏</Link>}
           <Link href="/ask"><Sparkle size={17} weight="fill" />AI 问答</Link>
         </nav>

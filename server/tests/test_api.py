@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from fastapi.testclient import TestClient
 
 from app.main import app, sanitize_content
@@ -41,3 +43,50 @@ def test_user_can_list_page_attachments():
         files = client.get(f"/api/v1/pages/{page['id']}/files")
         assert files.status_code == 200
         assert files.json() == []
+
+
+def test_registration_creates_read_only_user():
+    with TestClient(app) as client:
+        email = f"reader-{uuid4()}@example.com"
+        register = client.post(
+            "/api/v1/auth/register",
+            json={"email": email, "password": "ChangeMe123!", "display_name": "Reader User"},
+        )
+        assert register.status_code == 200
+        user = register.json()["user"]
+        assert user["can_edit"] is False
+        assert "Readers" in [group["name"] for group in user["groups"]]
+
+        created = client.post(
+            "/api/v1/pages",
+            json={"title": "Read only draft", "summary": "", "content": "No edit", "tags": []},
+        )
+        assert created.status_code == 403
+
+
+def test_admin_can_grant_edit_permission_with_group():
+    with TestClient(app) as client:
+        email = f"editor-{uuid4()}@example.com"
+        register = client.post(
+            "/api/v1/auth/register",
+            json={"email": email, "password": "ChangeMe123!", "display_name": "Editor User"},
+        )
+        assert register.status_code == 200
+        user_id = register.json()["user"]["id"]
+        client.post("/api/v1/auth/logout")
+
+        assert client.post("/api/v1/auth/login", json={"email": "admin@example.com", "password": "ChangeMe123!"}).status_code == 200
+        group = client.post("/api/v1/admin/groups", json={"name": f"Editors {uuid4()}", "description": "", "can_edit": True})
+        assert group.status_code == 200
+        added = client.post(f"/api/v1/admin/groups/{group.json()['id']}/members", json={"user_id": user_id})
+        assert added.status_code == 200
+        client.post("/api/v1/auth/logout")
+
+        login = client.post("/api/v1/auth/login", json={"email": email, "password": "ChangeMe123!"})
+        assert login.status_code == 200
+        assert login.json()["user"]["can_edit"] is True
+        created = client.post(
+            "/api/v1/pages",
+            json={"title": f"Editable draft {uuid4()}", "summary": "", "content": "Can edit", "tags": []},
+        )
+        assert created.status_code == 200
