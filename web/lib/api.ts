@@ -6,7 +6,8 @@ export type Page = {
   topic: Topic | null; tags: string[]; current_version: number; updated_at: string;
   owner: { name: string; email: string } | null;
 };
-export type User = { id: string; name: string; email: string; role: string };
+export type User = { id: string; name: string; email: string; role: string; can_edit: boolean; groups: { id: string; name: string; can_edit: boolean }[] };
+export type Group = { id: string; name: string; description: string; can_edit: boolean; members: { id: string; name: string; email: string }[] };
 export type FileAsset = { id: string; name: string; content_type: string; size: number; sha256: string; created_at: string };
 
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {

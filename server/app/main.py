@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 
 from .config import AI_ENABLED, LLM_API_KEY, LLM_BASE_URL, LLM_MODEL, SESSION_DAYS
 from .db import Base, engine, get_db
-from .models import Favorite, FileAsset, KnowledgePage, PageTag, PageVersion, SessionToken, Tag, Topic, User
+from .models import Favorite, FileAsset, Group, GroupMember, KnowledgePage, PageTag, PageVersion, SessionToken, Tag, Topic, User
 from .security import hash_password, new_token, token_hash, verify_password
 from .storage import storage
 
@@ -101,6 +101,56 @@ def page_tags(db: Session, page_id: str) -> list[str]:
     )
 
 
+def user_groups(db: Session, user_id: str) -> list[Group]:
+    return list(
+        db.scalars(
+            select(Group)
+            .join(GroupMember, GroupMember.group_id == Group.id)
+            .where(GroupMember.user_id == user_id)
+            .order_by(Group.name)
+        )
+    )
+
+
+def user_can_edit(db: Session, user: User) -> bool:
+    if user.role in {"contributor", "editor", "admin"}:
+        return True
+    return db.scalar(
+        select(func.count())
+        .select_from(GroupMember)
+        .join(Group, Group.id == GroupMember.group_id)
+        .where(GroupMember.user_id == user.id, Group.can_edit.is_(True))
+    ) > 0
+
+
+def serialize_user(db: Session, user: User) -> dict:
+    groups = user_groups(db, user.id)
+    return {
+        "id": user.id,
+        "name": user.display_name,
+        "email": user.email,
+        "role": user.role,
+        "can_edit": user_can_edit(db, user),
+        "groups": [{"id": group.id, "name": group.name, "can_edit": group.can_edit} for group in groups],
+    }
+
+
+def serialize_group(db: Session, group: Group) -> dict:
+    members = db.scalars(
+        select(User)
+        .join(GroupMember, GroupMember.user_id == User.id)
+        .where(GroupMember.group_id == group.id)
+        .order_by(User.display_name)
+    ).all()
+    return {
+        "id": group.id,
+        "name": group.name,
+        "description": group.description,
+        "can_edit": group.can_edit,
+        "members": [{"id": user.id, "name": user.display_name, "email": user.email} for user in members],
+    }
+
+
 def serialize_file(asset: FileAsset) -> dict:
     return {
         "id": asset.id,
@@ -148,9 +198,12 @@ def current_user(
     return user
 
 
-def editor_user(user: Annotated[User, Depends(current_user)]) -> User:
-    if user.role not in {"contributor", "editor", "admin"}:
-        raise HTTPException(403, "需要内容编辑权限")
+def editor_user(
+    db: Annotated[Session, Depends(get_db)],
+    user: Annotated[User, Depends(current_user)],
+) -> User:
+    if not user_can_edit(db, user):
+        raise HTTPException(403, "\u9700\u8981\u53ef\u7f16\u8f91\u5206\u7ec4\u6743\u9650")
     return user
 
 
@@ -163,6 +216,22 @@ def admin_user(user: Annotated[User, Depends(current_user)]) -> User:
 class LoginInput(BaseModel):
     email: str
     password: str
+
+
+class RegisterInput(BaseModel):
+    email: str
+    password: str = Field(min_length=8, max_length=128)
+    display_name: str = Field(min_length=1, max_length=120)
+
+
+class GroupInput(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    description: str = ""
+    can_edit: bool = False
+
+
+class GroupMemberInput(BaseModel):
+    user_id: str
 
 
 class TopicInput(BaseModel):
@@ -203,6 +272,18 @@ async def lifespan(_: FastAPI):
             )
             db.add(admin)
             db.flush()
+        readers = db.scalar(select(Group).where(Group.name == "Readers"))
+        if readers is None:
+            readers = Group(name="Readers", description="Read-only users", can_edit=False)
+            db.add(readers)
+            db.flush()
+        editors = db.scalar(select(Group).where(Group.name == "Editors"))
+        if editors is None:
+            editors = Group(name="Editors", description="Users who can create and edit knowledge", can_edit=True)
+            db.add(editors)
+            db.flush()
+        if db.get(GroupMember, {"group_id": editors.id, "user_id": admin.id}) is None:
+            db.add(GroupMember(group_id=editors.id, user_id=admin.id))
         if db.scalar(select(func.count()).select_from(Topic)) == 0:
             topics = [
                 Topic(name="产品知识", slug="product", description="产品、能力与使用方式", sort_order=1),
@@ -271,7 +352,26 @@ def login(payload: LoginInput, response: Response, db: Annotated[Session, Depend
     db.commit()
     response.set_cookie("kp_session", token, httponly=True, samesite="lax", secure=False, max_age=SESSION_DAYS * 86400)
     logger.info("login_succeeded user_id=%s role=%s", user.id, user.role)
-    return {"user": {"id": user.id, "name": user.display_name, "email": user.email, "role": user.role}}
+    return {"user": serialize_user(db, user)}
+
+
+@app.post("/api/v1/auth/register")
+def register(payload: RegisterInput, response: Response, db: Annotated[Session, Depends(get_db)]):
+    email = payload.email.lower().strip()
+    if db.scalar(select(User).where(User.email == email)) is not None:
+        raise HTTPException(409, "\u90ae\u7bb1\u5df2\u6ce8\u518c")
+    user = User(email=email, display_name=payload.display_name.strip(), password_hash=hash_password(payload.password), role="reader")
+    db.add(user)
+    db.flush()
+    readers = db.scalar(select(Group).where(Group.name == "Readers"))
+    if readers is not None:
+        db.add(GroupMember(group_id=readers.id, user_id=user.id))
+    token = new_token()
+    db.add(SessionToken(token_hash=token_hash(token), user_id=user.id, expires_at=utcnow() + timedelta(days=SESSION_DAYS)))
+    db.commit()
+    response.set_cookie("kp_session", token, httponly=True, samesite="lax", secure=False, max_age=SESSION_DAYS * 86400)
+    logger.info("register_succeeded user_id=%s", user.id)
+    return {"user": serialize_user(db, user)}
 
 
 @app.post("/api/v1/auth/logout")
@@ -285,8 +385,71 @@ def logout(response: Response, db: Annotated[Session, Depends(get_db)], kp_sessi
 
 
 @app.get("/api/v1/auth/me")
-def me(user: Annotated[User, Depends(current_user)]):
-    return {"id": user.id, "name": user.display_name, "email": user.email, "role": user.role}
+def me(db: Annotated[Session, Depends(get_db)], user: Annotated[User, Depends(current_user)]):
+    return serialize_user(db, user)
+
+
+@app.get("/api/v1/admin/users")
+def list_users(db: Annotated[Session, Depends(get_db)], _: Annotated[User, Depends(admin_user)]):
+    users = db.scalars(select(User).order_by(User.created_at)).all()
+    return [serialize_user(db, user) for user in users]
+
+
+@app.get("/api/v1/admin/groups")
+def list_groups(db: Annotated[Session, Depends(get_db)], _: Annotated[User, Depends(admin_user)]):
+    groups = db.scalars(select(Group).order_by(Group.name)).all()
+    return [serialize_group(db, group) for group in groups]
+
+
+@app.post("/api/v1/admin/groups")
+def create_group(payload: GroupInput, db: Annotated[Session, Depends(get_db)], _: Annotated[User, Depends(admin_user)]):
+    name = payload.name.strip()
+    if db.scalar(select(Group).where(func.lower(Group.name) == name.lower())) is not None:
+        raise HTTPException(409, "\u5206\u7ec4\u5df2\u5b58\u5728")
+    group = Group(name=name, description=payload.description.strip(), can_edit=payload.can_edit)
+    db.add(group)
+    db.commit()
+    db.refresh(group)
+    logger.info("group_created group_id=%s actor_id=%s", group.id, _.id)
+    return serialize_group(db, group)
+
+
+@app.put("/api/v1/admin/groups/{group_id}")
+def update_group(group_id: str, payload: GroupInput, db: Annotated[Session, Depends(get_db)], _: Annotated[User, Depends(admin_user)]):
+    group = db.get(Group, group_id)
+    if group is None:
+        raise HTTPException(404, "\u5206\u7ec4\u4e0d\u5b58\u5728")
+    group.name = payload.name.strip()
+    group.description = payload.description.strip()
+    group.can_edit = payload.can_edit
+    db.commit()
+    db.refresh(group)
+    logger.info("group_updated group_id=%s actor_id=%s", group.id, _.id)
+    return serialize_group(db, group)
+
+
+@app.post("/api/v1/admin/groups/{group_id}/members")
+def add_group_member(group_id: str, payload: GroupMemberInput, db: Annotated[Session, Depends(get_db)], _: Annotated[User, Depends(admin_user)]):
+    if db.get(Group, group_id) is None:
+        raise HTTPException(404, "\u5206\u7ec4\u4e0d\u5b58\u5728")
+    if db.get(User, payload.user_id) is None:
+        raise HTTPException(404, "\u7528\u6237\u4e0d\u5b58\u5728")
+    if db.get(GroupMember, {"group_id": group_id, "user_id": payload.user_id}) is None:
+        db.add(GroupMember(group_id=group_id, user_id=payload.user_id))
+        db.commit()
+    return serialize_group(db, db.get(Group, group_id))
+
+
+@app.delete("/api/v1/admin/groups/{group_id}/members/{user_id}")
+def remove_group_member(group_id: str, user_id: str, db: Annotated[Session, Depends(get_db)], _: Annotated[User, Depends(admin_user)]):
+    member = db.get(GroupMember, {"group_id": group_id, "user_id": user_id})
+    if member is not None:
+        db.delete(member)
+        db.commit()
+    group = db.get(Group, group_id)
+    if group is None:
+        raise HTTPException(404, "\u5206\u7ec4\u4e0d\u5b58\u5728")
+    return serialize_group(db, group)
 
 
 @app.get("/api/v1/topics")
@@ -328,7 +491,7 @@ def list_pages(
 @app.get("/api/v1/pages/{slug}")
 def get_page(slug: str, db: Annotated[Session, Depends(get_db)], user: Annotated[User, Depends(current_user)]):
     page = db.scalar(select(KnowledgePage).where(KnowledgePage.slug == slug))
-    if page is None or (page.status != "published" and user.role not in {"editor", "admin"} and page.owner_id != user.id):
+    if page is None or (page.status != "published" and not user_can_edit(db, user) and page.owner_id != user.id):
         raise HTTPException(404, "知识页面不存在")
     return serialize_page(db, page)
 
@@ -338,8 +501,6 @@ def get_page_by_id(page_id: str, db: Annotated[Session, Depends(get_db)], user: 
     page = db.get(KnowledgePage, page_id)
     if page is None:
         raise HTTPException(404, "知识页面不存在")
-    if user.role == "contributor" and page.owner_id != user.id:
-        raise HTTPException(403, "只能编辑自己创建的知识")
     return serialize_page(db, page)
 
 
@@ -364,8 +525,6 @@ def update_page(page_id: str, payload: PageInput, db: Annotated[Session, Depends
     page = db.get(KnowledgePage, page_id)
     if page is None:
         raise HTTPException(404, "知识页面不存在")
-    if user.role == "contributor" and page.owner_id != user.id:
-        raise HTTPException(403, "只能编辑自己创建的知识")
     if payload.topic_id and db.get(Topic, payload.topic_id) is None:
         raise HTTPException(422, "主题不存在")
     page.title, page.summary, page.content = payload.title.strip(), payload.summary.strip(), sanitize_content(payload.content)
@@ -382,8 +541,6 @@ def publish_page(page_id: str, payload: PublishInput, db: Annotated[Session, Dep
     page = db.get(KnowledgePage, page_id)
     if page is None:
         raise HTTPException(404, "知识页面不存在")
-    if user.role == "contributor" and page.owner_id != user.id:
-        raise HTTPException(403, "只能发布自己创建的知识")
     page.current_version += 1
     page.status = "published"
     db.add(PageVersion(page_id=page.id, version_no=page.current_version, title=page.title, summary=page.summary, content=page.content, change_note=payload.change_note, created_by=user.id))
@@ -397,8 +554,6 @@ def archive_page(page_id: str, db: Annotated[Session, Depends(get_db)], user: An
     page = db.get(KnowledgePage, page_id)
     if page is None:
         raise HTTPException(404, "知识页面不存在")
-    if user.role == "contributor" and page.owner_id != user.id:
-        raise HTTPException(403, "只能归档自己创建的知识")
     page.status = "archived"
     db.commit()
     logger.info("page_archived page_id=%s actor_id=%s", page.id, user.id)
@@ -480,7 +635,7 @@ async def upload_file(
 @app.get("/api/v1/pages/{page_id}/files")
 def list_page_files(page_id: str, db: Annotated[Session, Depends(get_db)], user: Annotated[User, Depends(current_user)]):
     page = db.get(KnowledgePage, page_id)
-    if page is None or (page.status != "published" and user.role not in {"editor", "admin"} and page.owner_id != user.id):
+    if page is None or (page.status != "published" and not user_can_edit(db, user) and page.owner_id != user.id):
         raise HTTPException(404, "知识页面不存在")
     assets = db.scalars(select(FileAsset).where(FileAsset.page_id == page.id).order_by(desc(FileAsset.created_at))).all()
     return [serialize_file(asset) for asset in assets]

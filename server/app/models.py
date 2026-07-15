@@ -28,6 +28,22 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 
+class Group(Base):
+    __tablename__ = "groups"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    name: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    description: Mapped[str] = mapped_column(Text, default="")
+    can_edit: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class GroupMember(Base):
+    __tablename__ = "group_members"
+    group_id: Mapped[str] = mapped_column(ForeignKey("groups.id"), primary_key=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
 class SessionToken(Base):
     __tablename__ = "session_tokens"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
