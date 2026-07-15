@@ -43,5 +43,8 @@ class LocalFileStorage:
             raise HTTPException(404, "文件不存在")
         return path
 
+    def delete(self, storage_key: str) -> None:
+        self._path(storage_key).unlink(missing_ok=True)
+
 
 storage = LocalFileStorage()

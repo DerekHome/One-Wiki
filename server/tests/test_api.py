@@ -90,3 +90,44 @@ def test_admin_can_grant_edit_permission_with_group():
             json={"title": f"Editable draft {uuid4()}", "summary": "", "content": "Can edit", "tags": []},
         )
         assert created.status_code == 200
+
+
+def test_settings_center_respects_group_permissions():
+    with TestClient(app) as client:
+        email = f"settings-{uuid4()}@example.com"
+        registered = client.post("/api/v1/auth/register", json={"email": email, "password": "ChangeMe123!", "display_name": "Settings Viewer"})
+        user_id = registered.json()["user"]["id"]
+        client.post("/api/v1/auth/logout")
+        assert client.post("/api/v1/auth/login", json={"email": "admin@example.com", "password": "ChangeMe123!"}).status_code == 200
+        group = client.post("/api/v1/admin/groups", json={"name": f"Settings {uuid4()}", "description": "", "permissions": ["settings.view"]})
+        assert group.status_code == 200
+        assert client.post(f"/api/v1/admin/groups/{group.json()['id']}/members", json={"user_id": user_id}).status_code == 200
+        client.post("/api/v1/auth/logout")
+        assert client.post("/api/v1/auth/login", json={"email": email, "password": "ChangeMe123!"}).status_code == 200
+        assert client.get("/api/v1/admin/settings").status_code == 200
+        assert client.put("/api/v1/admin/settings", json={"site_name": "Forbidden"}).status_code == 403
+
+
+def test_admin_can_create_update_and_deactivate_user():
+    with TestClient(app) as client:
+        assert client.post("/api/v1/auth/login", json={"email": "admin@example.com", "password": "ChangeMe123!"}).status_code == 200
+        email = f"managed-{uuid4()}@example.com"
+        created = client.post("/api/v1/admin/users", json={"email": email, "display_name": "Managed User", "password": "ChangeMe123!", "role": "reader", "is_active": True})
+        assert created.status_code == 200
+        user = created.json()
+        updated = client.put(f"/api/v1/admin/users/{user['id']}", json={"email": email, "display_name": "Managed Editor", "role": "editor", "is_active": True})
+        assert updated.status_code == 200
+        assert updated.json()["role"] == "editor"
+        assert client.delete(f"/api/v1/admin/users/{user['id']}").status_code == 200
+        users = client.get("/api/v1/admin/users").json()
+        assert next(item for item in users if item["id"] == user["id"])["is_active"] is False
+
+
+def test_admin_can_permanently_delete_document():
+    with TestClient(app) as client:
+        assert client.post("/api/v1/auth/login", json={"email": "admin@example.com", "password": "ChangeMe123!"}).status_code == 200
+        created = client.post("/api/v1/pages", json={"title": f"Delete me {uuid4()}", "summary": "", "content": "temporary", "tags": []})
+        assert created.status_code == 200
+        page = created.json()
+        assert client.delete(f"/api/v1/pages/{page['id']}").status_code == 200
+        assert client.get(f"/api/v1/pages/id/{page['id']}").status_code == 404

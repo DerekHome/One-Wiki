@@ -6,8 +6,15 @@ export type Page = {
   topic: Topic | null; tags: string[]; current_version: number; updated_at: string;
   owner: { name: string; email: string } | null;
 };
-export type User = { id: string; name: string; email: string; role: string; can_edit: boolean; groups: { id: string; name: string; can_edit: boolean }[] };
-export type Group = { id: string; name: string; description: string; can_edit: boolean; members: { id: string; name: string; email: string }[] };
+export type User = { id: string; name: string; email: string; role: string; is_active: boolean; can_edit: boolean; can_access_settings: boolean; permissions: string[]; groups: { id: string; name: string; can_edit: boolean; permissions: string[] }[] };
+export type Group = { id: string; name: string; description: string; can_edit: boolean; permissions: string[]; members: { id: string; name: string; email: string }[] };
+export type PermissionItem = { key: string; label: string; category: string };
+export type AdminSettings = {
+  site_name: string; registration_enabled: boolean; session_days: number; max_upload_size_mb: number;
+  database_url_configured: boolean; database_url_masked: string; database_managed_by_environment: boolean; current_database_driver: string;
+  ai_enabled: boolean; llm_base_url: string; llm_model: string; llm_api_key_configured: boolean;
+  permissions: string[]; permission_catalog: PermissionItem[]; restart_required_fields: string[]; is_admin: boolean;
+};
 export type FileAsset = { id: string; name: string; content_type: string; size: number; sha256: string; created_at: string };
 
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {

@@ -14,12 +14,13 @@ from fastapi import Cookie, Depends, FastAPI, File, HTTPException, Query, Reques
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
-from sqlalchemy import desc, func, or_, select
+from sqlalchemy import create_engine as create_test_engine, desc, func, or_, select, text
 from sqlalchemy.orm import Session
 
-from .config import AI_ENABLED, LLM_API_KEY, LLM_BASE_URL, LLM_MODEL, SESSION_DAYS
+from .config import AI_ENABLED, DATABASE_URL, LLM_API_KEY, LLM_BASE_URL, LLM_MODEL, SESSION_DAYS
 from .db import Base, engine, get_db
-from .models import Favorite, FileAsset, Group, GroupMember, KnowledgePage, PageTag, PageVersion, SessionToken, Tag, Topic, User
+from .models import Favorite, FileAsset, Group, GroupMember, GroupPermission, KnowledgePage, PageTag, PageVersion, SessionToken, Tag, Topic, User
+from .runtime_settings import load_runtime_settings, masked_runtime_settings, public_runtime_settings, save_runtime_settings
 from .security import hash_password, new_token, token_hash, verify_password
 from .storage import storage
 
@@ -112,26 +113,81 @@ def user_groups(db: Session, user_id: str) -> list[Group]:
     )
 
 
-def user_can_edit(db: Session, user: User) -> bool:
-    if user.role in {"contributor", "editor", "admin"}:
-        return True
-    return db.scalar(
+PERMISSION_CATALOG = [
+    {"key": "content.edit", "label": "编辑文档", "category": "内容管理"},
+    {"key": "content.delete", "label": "删除文档", "category": "内容管理"},
+    {"key": "users.manage", "label": "用户管理", "category": "组织管理"},
+    {"key": "groups.manage", "label": "群组管理", "category": "组织管理"},
+    {"key": "settings.view", "label": "进入设置中心", "category": "系统设置"},
+    {"key": "settings.configure", "label": "修改通用设置", "category": "系统设置"},
+    {"key": "database.configure", "label": "配置数据库", "category": "系统设置"},
+    {"key": "ai.configure", "label": "配置 AI 服务", "category": "系统设置"},
+    {"key": "audit.view", "label": "查看审计信息", "category": "安全与审计"},
+]
+ALL_PERMISSIONS = {item["key"] for item in PERMISSION_CATALOG}
+SETTINGS_PERMISSIONS = {key for key in ALL_PERMISSIONS if key.endswith(".manage") or key.endswith(".configure") or key in {"settings.view", "audit.view"}}
+
+
+def group_permissions(db: Session, group_id: str) -> set[str]:
+    return set(db.scalars(select(GroupPermission.permission).where(GroupPermission.group_id == group_id)))
+
+
+def set_group_permissions(db: Session, group: Group, permissions: list[str], can_edit: bool = False) -> None:
+    requested = set(permissions)
+    if can_edit:
+        requested.add("content.edit")
+    unknown = requested - ALL_PERMISSIONS
+    if unknown:
+        raise HTTPException(422, f"未知权限：{', '.join(sorted(unknown))}")
+    db.query(GroupPermission).filter(GroupPermission.group_id == group.id).delete()
+    for permission in sorted(requested):
+        db.add(GroupPermission(group_id=group.id, permission=permission))
+    group.can_edit = "content.edit" in requested
+
+
+def user_permissions(db: Session, user: User) -> set[str]:
+    if user.role == "admin":
+        return set(ALL_PERMISSIONS)
+    permissions = set(
+        db.scalars(
+            select(GroupPermission.permission)
+            .join(GroupMember, GroupMember.group_id == GroupPermission.group_id)
+            .where(GroupMember.user_id == user.id)
+        )
+    )
+    if user.role in {"contributor", "editor"}:
+        permissions.add("content.edit")
+    if db.scalar(
         select(func.count())
         .select_from(GroupMember)
         .join(Group, Group.id == GroupMember.group_id)
         .where(GroupMember.user_id == user.id, Group.can_edit.is_(True))
-    ) > 0
+    ) > 0:
+        permissions.add("content.edit")
+    return permissions
+
+
+def has_permission(db: Session, user: User, permission: str) -> bool:
+    return permission in user_permissions(db, user)
+
+
+def user_can_edit(db: Session, user: User) -> bool:
+    return has_permission(db, user, "content.edit")
 
 
 def serialize_user(db: Session, user: User) -> dict:
     groups = user_groups(db, user.id)
+    permissions = sorted(user_permissions(db, user))
     return {
         "id": user.id,
         "name": user.display_name,
         "email": user.email,
         "role": user.role,
+        "is_active": user.is_active,
         "can_edit": user_can_edit(db, user),
-        "groups": [{"id": group.id, "name": group.name, "can_edit": group.can_edit} for group in groups],
+        "can_access_settings": bool(set(permissions) & SETTINGS_PERMISSIONS),
+        "permissions": permissions,
+        "groups": [{"id": group.id, "name": group.name, "can_edit": group.can_edit, "permissions": sorted(group_permissions(db, group.id))} for group in groups],
     }
 
 
@@ -142,11 +198,15 @@ def serialize_group(db: Session, group: Group) -> dict:
         .where(GroupMember.group_id == group.id)
         .order_by(User.display_name)
     ).all()
+    permissions = group_permissions(db, group.id)
+    if group.can_edit:
+        permissions.add("content.edit")
     return {
         "id": group.id,
         "name": group.name,
         "description": group.description,
         "can_edit": group.can_edit,
+        "permissions": sorted(permissions),
         "members": [{"id": user.id, "name": user.display_name, "email": user.email} for user in members],
     }
 
@@ -213,6 +273,27 @@ def admin_user(user: Annotated[User, Depends(current_user)]) -> User:
     return user
 
 
+def require_permission(permission: str):
+    def dependency(
+        db: Annotated[Session, Depends(get_db)],
+        user: Annotated[User, Depends(current_user)],
+    ) -> User:
+        if not has_permission(db, user, permission):
+            raise HTTPException(403, f"需要权限：{permission}")
+        return user
+
+    return dependency
+
+
+def settings_user(
+    db: Annotated[Session, Depends(get_db)],
+    user: Annotated[User, Depends(current_user)],
+) -> User:
+    if not (user_permissions(db, user) & SETTINGS_PERMISSIONS):
+        raise HTTPException(403, "需要设置中心权限")
+    return user
+
+
 class LoginInput(BaseModel):
     email: str
     password: str
@@ -228,10 +309,43 @@ class GroupInput(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     description: str = ""
     can_edit: bool = False
+    permissions: list[str] = Field(default_factory=list)
 
 
 class GroupMemberInput(BaseModel):
     user_id: str
+
+
+class UserCreateInput(BaseModel):
+    email: str
+    display_name: str = Field(min_length=1, max_length=120)
+    password: str = Field(min_length=8, max_length=128)
+    role: str = "reader"
+    is_active: bool = True
+
+
+class UserUpdateInput(BaseModel):
+    email: str
+    display_name: str = Field(min_length=1, max_length=120)
+    password: str | None = Field(default=None, min_length=8, max_length=128)
+    role: str = "reader"
+    is_active: bool = True
+
+
+class SettingsInput(BaseModel):
+    site_name: str = Field(default="One WIKI", min_length=1, max_length=80)
+    registration_enabled: bool = True
+    session_days: int = Field(default=14, ge=1, le=365)
+    max_upload_size_mb: int = Field(default=100, ge=1, le=2048)
+    database_url: str | None = Field(default=None, max_length=1000)
+    ai_enabled: bool = False
+    llm_base_url: str = Field(default="", max_length=1000)
+    llm_model: str = Field(default="", max_length=200)
+    llm_api_key: str | None = Field(default=None, max_length=1000)
+
+
+class DatabaseTestInput(BaseModel):
+    database_url: str = Field(min_length=1, max_length=1000)
 
 
 class TopicInput(BaseModel):
@@ -284,6 +398,8 @@ async def lifespan(_: FastAPI):
             db.flush()
         if db.get(GroupMember, {"group_id": editors.id, "user_id": admin.id}) is None:
             db.add(GroupMember(group_id=editors.id, user_id=admin.id))
+        if db.get(GroupPermission, {"group_id": editors.id, "permission": "content.edit"}) is None:
+            db.add(GroupPermission(group_id=editors.id, permission="content.edit"))
         if db.scalar(select(func.count()).select_from(Topic)) == 0:
             topics = [
                 Topic(name="产品知识", slug="product", description="产品、能力与使用方式", sort_order=1),
@@ -357,6 +473,8 @@ def login(payload: LoginInput, response: Response, db: Annotated[Session, Depend
 
 @app.post("/api/v1/auth/register")
 def register(payload: RegisterInput, response: Response, db: Annotated[Session, Depends(get_db)]):
+    if not public_runtime_settings()["registration_enabled"]:
+        raise HTTPException(403, "系统已关闭自主注册")
     email = payload.email.lower().strip()
     if db.scalar(select(User).where(User.email == email)) is not None:
         raise HTTPException(409, "\u90ae\u7bb1\u5df2\u6ce8\u518c")
@@ -389,25 +507,157 @@ def me(db: Annotated[Session, Depends(get_db)], user: Annotated[User, Depends(cu
     return serialize_user(db, user)
 
 
+@app.get("/api/v1/settings/public")
+def public_settings():
+    return public_runtime_settings()
+
+
+@app.get("/api/v1/admin/settings")
+def get_admin_settings(db: Annotated[Session, Depends(get_db)], user: Annotated[User, Depends(settings_user)]):
+    settings = masked_runtime_settings()
+    settings.update({
+        "permissions": sorted(user_permissions(db, user)),
+        "is_admin": user.role == "admin",
+        "permission_catalog": PERMISSION_CATALOG,
+        "current_database_driver": DATABASE_URL.split(":", 1)[0],
+        "restart_required_fields": ["database_url", "session_days", "max_upload_size_mb", "ai_enabled", "llm_base_url", "llm_model", "llm_api_key"],
+    })
+    return settings
+
+
+@app.put("/api/v1/admin/settings")
+def update_admin_settings(payload: SettingsInput, db: Annotated[Session, Depends(get_db)], user: Annotated[User, Depends(settings_user)]):
+    provided = set(payload.model_fields_set)
+    general_fields = {"site_name", "registration_enabled", "session_days", "max_upload_size_mb"}
+    database_fields = {"database_url"}
+    ai_fields = {"ai_enabled", "llm_base_url", "llm_model", "llm_api_key"}
+    permissions = user_permissions(db, user)
+    if provided & general_fields and "settings.configure" not in permissions:
+        raise HTTPException(403, "需要通用设置权限")
+    if provided & database_fields and "database.configure" not in permissions:
+        raise HTTPException(403, "需要数据库配置权限")
+    if provided & ai_fields and "ai.configure" not in permissions:
+        raise HTTPException(403, "需要 AI 配置权限")
+    values = payload.model_dump(include=provided)
+    if values.get("database_url") == "":
+        values.pop("database_url", None)
+    if values.get("llm_api_key") == "":
+        values.pop("llm_api_key", None)
+    save_runtime_settings(values)
+    logger.info("settings_updated fields=%s actor_id=%s", ",".join(sorted(values)), user.id)
+    restart_fields = {"database_url", "session_days", "max_upload_size_mb", "ai_enabled", "llm_base_url", "llm_model", "llm_api_key"}
+    return {**masked_runtime_settings(), "restart_required": bool(provided & restart_fields)}
+
+
+@app.post("/api/v1/admin/settings/database/test")
+def test_database_connection(payload: DatabaseTestInput, _: Annotated[User, Depends(require_permission("database.configure"))]):
+    candidate = create_test_engine(payload.database_url, pool_pre_ping=True)
+    try:
+        with candidate.connect() as connection:
+            connection.execute(text("SELECT 1"))
+    except Exception as error:
+        logger.warning("database_connection_test_failed driver=%s", payload.database_url.split(":", 1)[0])
+        raise HTTPException(422, f"数据库连接失败：{error.__class__.__name__}")
+    finally:
+        candidate.dispose()
+    return {"ok": True, "driver": payload.database_url.split(":", 1)[0]}
+
+
+@app.get("/api/v1/admin/pages")
+def list_admin_pages(db: Annotated[Session, Depends(get_db)], user: Annotated[User, Depends(settings_user)]):
+    permissions = user_permissions(db, user)
+    if not ({"content.edit", "content.delete"} & permissions):
+        raise HTTPException(403, "需要文档管理权限")
+    pages = db.scalars(select(KnowledgePage).order_by(desc(KnowledgePage.updated_at)).limit(200)).all()
+    return [serialize_page(db, page) for page in pages]
+
+
 @app.get("/api/v1/admin/users")
-def list_users(db: Annotated[Session, Depends(get_db)], _: Annotated[User, Depends(admin_user)]):
+def list_users(db: Annotated[Session, Depends(get_db)], _: Annotated[User, Depends(require_permission("users.manage"))]):
     users = db.scalars(select(User).order_by(User.created_at)).all()
     return [serialize_user(db, user) for user in users]
 
 
+@app.post("/api/v1/admin/users")
+def create_user(payload: UserCreateInput, db: Annotated[Session, Depends(get_db)], actor: Annotated[User, Depends(require_permission("users.manage"))]):
+    email = payload.email.lower().strip()
+    if payload.role not in {"reader", "contributor", "editor", "admin"}:
+        raise HTTPException(422, "无效的用户角色")
+    if payload.role == "admin" and actor.role != "admin":
+        raise HTTPException(403, "只有管理员可以创建管理员账号")
+    if db.scalar(select(User).where(User.email == email)) is not None:
+        raise HTTPException(409, "邮箱已注册")
+    user = User(email=email, display_name=payload.display_name.strip(), password_hash=hash_password(payload.password), role=payload.role, is_active=payload.is_active)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    logger.info("admin_user_created user_id=%s actor_id=%s", user.id, actor.id)
+    return serialize_user(db, user)
+
+
+@app.put("/api/v1/admin/users/{user_id}")
+def update_user(user_id: str, payload: UserUpdateInput, db: Annotated[Session, Depends(get_db)], actor: Annotated[User, Depends(require_permission("users.manage"))]):
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(404, "用户不存在")
+    email = payload.email.lower().strip()
+    duplicate = db.scalar(select(User).where(User.email == email, User.id != user.id))
+    if duplicate is not None:
+        raise HTTPException(409, "邮箱已被使用")
+    if payload.role not in {"reader", "contributor", "editor", "admin"}:
+        raise HTTPException(422, "无效的用户角色")
+    if (user.role == "admin" or payload.role == "admin") and actor.role != "admin":
+        raise HTTPException(403, "只有管理员可以管理管理员账号")
+    if user.id == actor.id and payload.role != user.role:
+        raise HTTPException(422, "不能修改当前登录账号的角色")
+    if user.role == "admin" and payload.role != "admin" and db.scalar(select(func.count()).select_from(User).where(User.role == "admin", User.is_active.is_(True))) <= 1:
+        raise HTTPException(422, "系统必须保留至少一个有效管理员")
+    if user.id == actor.id and not payload.is_active:
+        raise HTTPException(422, "不能停用当前登录账号")
+    user.email = email
+    user.display_name = payload.display_name.strip()
+    user.role = payload.role
+    user.is_active = payload.is_active
+    if payload.password:
+        user.password_hash = hash_password(payload.password)
+    db.commit()
+    logger.info("admin_user_updated user_id=%s actor_id=%s", user.id, actor.id)
+    return serialize_user(db, user)
+
+
+@app.delete("/api/v1/admin/users/{user_id}")
+def delete_user(user_id: str, db: Annotated[Session, Depends(get_db)], actor: Annotated[User, Depends(require_permission("users.manage"))]):
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(404, "用户不存在")
+    if user.id == actor.id:
+        raise HTTPException(422, "不能删除当前登录账号")
+    if user.role == "admin" and actor.role != "admin":
+        raise HTTPException(403, "只有管理员可以停用管理员账号")
+    if user.role == "admin" and db.scalar(select(func.count()).select_from(User).where(User.role == "admin", User.is_active.is_(True))) <= 1:
+        raise HTTPException(422, "系统必须保留至少一个有效管理员")
+    user.is_active = False
+    db.query(SessionToken).filter(SessionToken.user_id == user.id).delete()
+    db.commit()
+    logger.info("admin_user_deactivated user_id=%s actor_id=%s", user.id, actor.id)
+    return {"ok": True, "deactivated": True}
+
+
 @app.get("/api/v1/admin/groups")
-def list_groups(db: Annotated[Session, Depends(get_db)], _: Annotated[User, Depends(admin_user)]):
+def list_groups(db: Annotated[Session, Depends(get_db)], _: Annotated[User, Depends(require_permission("groups.manage"))]):
     groups = db.scalars(select(Group).order_by(Group.name)).all()
     return [serialize_group(db, group) for group in groups]
 
 
 @app.post("/api/v1/admin/groups")
-def create_group(payload: GroupInput, db: Annotated[Session, Depends(get_db)], _: Annotated[User, Depends(admin_user)]):
+def create_group(payload: GroupInput, db: Annotated[Session, Depends(get_db)], _: Annotated[User, Depends(require_permission("groups.manage"))]):
     name = payload.name.strip()
     if db.scalar(select(Group).where(func.lower(Group.name) == name.lower())) is not None:
         raise HTTPException(409, "\u5206\u7ec4\u5df2\u5b58\u5728")
     group = Group(name=name, description=payload.description.strip(), can_edit=payload.can_edit)
     db.add(group)
+    db.flush()
+    set_group_permissions(db, group, payload.permissions, payload.can_edit)
     db.commit()
     db.refresh(group)
     logger.info("group_created group_id=%s actor_id=%s", group.id, _.id)
@@ -415,13 +665,13 @@ def create_group(payload: GroupInput, db: Annotated[Session, Depends(get_db)], _
 
 
 @app.put("/api/v1/admin/groups/{group_id}")
-def update_group(group_id: str, payload: GroupInput, db: Annotated[Session, Depends(get_db)], _: Annotated[User, Depends(admin_user)]):
+def update_group(group_id: str, payload: GroupInput, db: Annotated[Session, Depends(get_db)], _: Annotated[User, Depends(require_permission("groups.manage"))]):
     group = db.get(Group, group_id)
     if group is None:
         raise HTTPException(404, "\u5206\u7ec4\u4e0d\u5b58\u5728")
     group.name = payload.name.strip()
     group.description = payload.description.strip()
-    group.can_edit = payload.can_edit
+    set_group_permissions(db, group, payload.permissions, payload.can_edit)
     db.commit()
     db.refresh(group)
     logger.info("group_updated group_id=%s actor_id=%s", group.id, _.id)
@@ -429,7 +679,7 @@ def update_group(group_id: str, payload: GroupInput, db: Annotated[Session, Depe
 
 
 @app.post("/api/v1/admin/groups/{group_id}/members")
-def add_group_member(group_id: str, payload: GroupMemberInput, db: Annotated[Session, Depends(get_db)], _: Annotated[User, Depends(admin_user)]):
+def add_group_member(group_id: str, payload: GroupMemberInput, db: Annotated[Session, Depends(get_db)], _: Annotated[User, Depends(require_permission("groups.manage"))]):
     if db.get(Group, group_id) is None:
         raise HTTPException(404, "\u5206\u7ec4\u4e0d\u5b58\u5728")
     if db.get(User, payload.user_id) is None:
@@ -441,7 +691,7 @@ def add_group_member(group_id: str, payload: GroupMemberInput, db: Annotated[Ses
 
 
 @app.delete("/api/v1/admin/groups/{group_id}/members/{user_id}")
-def remove_group_member(group_id: str, user_id: str, db: Annotated[Session, Depends(get_db)], _: Annotated[User, Depends(admin_user)]):
+def remove_group_member(group_id: str, user_id: str, db: Annotated[Session, Depends(get_db)], _: Annotated[User, Depends(require_permission("groups.manage"))]):
     member = db.get(GroupMember, {"group_id": group_id, "user_id": user_id})
     if member is not None:
         db.delete(member)
@@ -450,6 +700,21 @@ def remove_group_member(group_id: str, user_id: str, db: Annotated[Session, Depe
     if group is None:
         raise HTTPException(404, "\u5206\u7ec4\u4e0d\u5b58\u5728")
     return serialize_group(db, group)
+
+
+@app.delete("/api/v1/admin/groups/{group_id}")
+def delete_group(group_id: str, db: Annotated[Session, Depends(get_db)], actor: Annotated[User, Depends(require_permission("groups.manage"))]):
+    group = db.get(Group, group_id)
+    if group is None:
+        raise HTTPException(404, "分组不存在")
+    if group.name in {"Readers", "Editors"}:
+        raise HTTPException(422, "系统默认分组不能删除")
+    db.query(GroupMember).filter(GroupMember.group_id == group.id).delete()
+    db.query(GroupPermission).filter(GroupPermission.group_id == group.id).delete()
+    db.delete(group)
+    db.commit()
+    logger.info("group_deleted group_id=%s actor_id=%s", group_id, actor.id)
+    return {"ok": True}
 
 
 @app.get("/api/v1/topics")
@@ -557,6 +822,24 @@ def archive_page(page_id: str, db: Annotated[Session, Depends(get_db)], user: An
     page.status = "archived"
     db.commit()
     logger.info("page_archived page_id=%s actor_id=%s", page.id, user.id)
+    return {"ok": True}
+
+
+@app.delete("/api/v1/pages/{page_id}")
+def delete_page(page_id: str, db: Annotated[Session, Depends(get_db)], user: Annotated[User, Depends(require_permission("content.delete"))]):
+    page = db.get(KnowledgePage, page_id)
+    if page is None:
+        raise HTTPException(404, "知识页面不存在")
+    assets = db.scalars(select(FileAsset).where(FileAsset.page_id == page.id)).all()
+    for asset in assets:
+        storage.delete(asset.storage_key)
+        db.delete(asset)
+    db.query(PageTag).filter(PageTag.page_id == page.id).delete()
+    db.query(PageVersion).filter(PageVersion.page_id == page.id).delete()
+    db.query(Favorite).filter(Favorite.page_id == page.id).delete()
+    db.delete(page)
+    db.commit()
+    logger.info("page_deleted page_id=%s actor_id=%s", page_id, user.id)
     return {"ok": True}
 
 

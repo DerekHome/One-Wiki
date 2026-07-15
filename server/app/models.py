@@ -44,6 +44,13 @@ class GroupMember(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 
+class GroupPermission(Base):
+    __tablename__ = "group_permissions"
+    group_id: Mapped[str] = mapped_column(ForeignKey("groups.id"), primary_key=True)
+    permission: Mapped[str] = mapped_column(String(80), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
 class SessionToken(Base):
     __tablename__ = "session_tokens"
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)

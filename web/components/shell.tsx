@@ -2,15 +2,17 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { BookmarkSimple, ShieldCheck, SignOut, Sparkle } from "@phosphor-icons/react";
+import { BookmarkSimple, GearSix, SignOut, Sparkle } from "@phosphor-icons/react";
 import { api, User } from "@/lib/api";
 import { KnowledgeTree } from "@/components/knowledge-tree";
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [siteName, setSiteName] = useState("One WIKI");
 
   useEffect(() => {
     api<User>("/auth/me").then(setUser).catch(() => setUser(null));
+    api<{ site_name: string }>("/settings/public").then((value) => setSiteName(value.site_name)).catch(() => undefined);
   }, []);
 
   async function logout() {
@@ -23,13 +25,13 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <header className="dashboard-header">
         <Link href="/" className="dashboard-title" aria-label="One WIKI 首页">
           <span className="logo-mark">W</span>
-          <span className="logo-text"><strong>One WIKI</strong><small>团队知识资源库</small></span>
+          <span className="logo-text"><strong>{siteName}</strong><small>团队知识资源库</small></span>
         </Link>
       </header>
       <aside className="sidebar">
         <KnowledgeTree />
         <nav className="dashboard-nav sidebar-actions">
-          {user?.role === "admin" && <Link href="/admin/permissions"><ShieldCheck size={17} weight="fill" />&#x6743;&#x9650;&#x7ba1;&#x7406;</Link>}
+          {user?.can_access_settings && <Link href="/settings"><GearSix size={17} weight="fill" />&#x7cfb;&#x7edf;&#x8bbe;&#x7f6e;</Link>}
           {user && <Link href="/favorites"><BookmarkSimple size={17} weight="fill" />我的收藏</Link>}
           <Link href="/ask"><Sparkle size={17} weight="fill" />AI 问答</Link>
         </nav>
