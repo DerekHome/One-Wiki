@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./apple-theme.css";
 
 export const metadata: Metadata = {
-  title: "智识库",
+  title: "One WIKI",
   description: "团队统一、可信的知识入口"
 };
 

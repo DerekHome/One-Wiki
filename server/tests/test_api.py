@@ -1,4 +1,10 @@
+import os
+import tempfile
+from pathlib import Path
 from uuid import uuid4
+
+TEST_DATABASE = Path(tempfile.gettempdir()) / f"one-wiki-test-{os.getpid()}.db"
+os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DATABASE.as_posix()}"
 
 from fastapi.testclient import TestClient
 
