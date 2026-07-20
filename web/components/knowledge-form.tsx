@@ -24,6 +24,6 @@ export function KnowledgeForm({ pageId }: { pageId?: string }) {
     </div>
     <div className="field content-field"><label>正文</label><RichTextEditor value={values.content} onChange={(content) => update("content", content)} /><span className="helper">支持标题、列表、引用、表格和图片。图片可使用已上传附件或可信 HTTPS 地址。</span></div>
     {page && <AttachmentLibrary pageId={page.id} editable />}
-    {error && <div className="error">{error}</div>}<div className="form-actions"><button className="primary" disabled={saving}>{saving ? "正在保存…" : pageId ? "保存草稿" : "发布知识"}</button>{page && <button type="button" className="secondary" disabled={saving} onClick={publish}>发布版本 {page.current_version + 1}</button>}</div>
+    {error && <div className="error">{error}</div>}<div className="form-actions"><button className="primary" disabled={saving}>{saving ? "正在保存…" : pageId ? "保存草稿" : "发布知识"}</button>{page && <button type="button" className="secondary" disabled={saving} onClick={publish}>发布版本</button>}</div>
   </form>;
 }

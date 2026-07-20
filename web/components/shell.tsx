@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { BookmarkSimple, GearSix, Moon, SignOut, Sparkle, Sun } from "@phosphor-icons/react";
+import { BookmarkSimple, Files, GearSix, Moon, SignOut, Sparkle, Sun } from "@phosphor-icons/react";
 import { api, User } from "@/lib/api";
 import { KnowledgeTree } from "@/components/knowledge-tree";
 
@@ -73,6 +73,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       </header>
       <aside className="sidebar">
         <KnowledgeTree />
+        {user?.can_edit && <Link href="/drafts" className="drafts-entry"><Files size={18} weight="fill" /><span>草稿箱</span></Link>}
         <nav className="dashboard-nav sidebar-actions" aria-label={"\u4e3b\u8981\u529f\u80fd"}>
           {user?.can_access_settings && <Link href="/settings"><GearSix size={18} weight="fill" />{"\u8bbe\u7f6e"}</Link>}
           {user && <Link href="/favorites"><BookmarkSimple size={18} weight="fill" />{"\u6536\u85cf"}</Link>}

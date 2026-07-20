@@ -790,6 +790,16 @@ def list_pages(
     return [serialize_page(db, page) for page in pages]
 
 
+@app.get("/api/v1/pages/drafts")
+def list_draft_pages(db: Annotated[Session, Depends(get_db)], user: Annotated[User, Depends(current_user)]):
+    statement = select(KnowledgePage).where(KnowledgePage.status == "draft")
+    if not user_can_edit(db, user):
+        statement = statement.where(KnowledgePage.owner_id == user.id)
+    pages = db.scalars(statement.order_by(desc(KnowledgePage.updated_at))).all()
+    logger.info("draft_pages_listed count=%s actor_id=%s", len(pages), user.id)
+    return [serialize_page(db, page) for page in pages]
+
+
 @app.get("/api/v1/pages/{slug}")
 def get_page(slug: str, db: Annotated[Session, Depends(get_db)], user: Annotated[User, Depends(current_user)]):
     page = db.scalar(select(KnowledgePage).where(KnowledgePage.slug == slug))

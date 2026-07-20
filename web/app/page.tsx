@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { MagnifyingGlass, Plus } from "@phosphor-icons/react";
+import { MagnifyingGlass } from "@phosphor-icons/react";
 import { PageCard } from "@/components/page-card";
 import { Shell } from "@/components/shell";
 import { api, Page, Topic } from "@/lib/api";
@@ -92,7 +91,7 @@ function HomeContent() {
       </div>
     </section>
     <section className="section resource-section">
-      <div className="section-head"><h2>{activeTopic ? activeTopic.name : "最近更新"}</h2><Link className="add-knowledge-button" href="/knowledge/new" aria-label="新增知识" title="新增知识"><Plus size={17} weight="bold" /></Link></div>
+      <div className="section-head"><h2>{activeTopic ? activeTopic.name : "最近更新"}</h2></div>
       {filteredPages.length ? <div className="cards">{filteredPages.map((page) => <PageCard page={page} key={page.id} />)}</div> : <div className="empty">{visiblePages.length ? "没有符合当前筛选条件的知识。" : selectedTopic ? "这个目录下还没有发布知识。" : "登录后即可浏览团队知识。"}</div>}
     </section>
   </Shell>;
