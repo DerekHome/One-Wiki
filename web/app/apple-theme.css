@@ -637,6 +637,13 @@ button:disabled { cursor: not-allowed; opacity: 0.48; }
 
 :root.dark ::selection { background: rgba(10, 132, 255, 0.32); color: #fff; }
 :root.dark .dashboard-header { background: rgba(24,24,28,.72); box-shadow: 0 1px 0 rgba(235,235,245,.08); }
+:root.dark .logo-mark {
+  border-color: rgba(255,255,255,.14);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 8px 18px rgba(0,0,0,.34);
+}
+:root.dark .dashboard-title:hover .logo-mark {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 10px 22px rgba(0,0,0,.4);
+}
 :root.dark .sidebar { background: rgba(22,22,26,.68); box-shadow: inset -1px 0 rgba(235,235,245,.08); }
 :root.dark .knowledge-tree,
 :root.dark .logout-tray,
