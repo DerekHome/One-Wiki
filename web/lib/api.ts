@@ -4,11 +4,15 @@ export type Topic = { id: string; name: string; slug: string; description: strin
 export type Page = {
   id: string; slug: string; title: string; summary: string; content: string; status: string;
   topic: Topic | null; tags: string[]; current_version: number; updated_at: string;
-  owner: { name: string; email: string } | null;
+  owner: { name: string; username: string; email: string } | null;
 };
-export type User = { id: string; name: string; email: string; role: string; is_active: boolean; can_edit: boolean; can_access_settings: boolean; permissions: string[]; groups: { id: string; name: string; can_edit: boolean; permissions: string[] }[] };
-export type Group = { id: string; name: string; description: string; can_edit: boolean; permissions: string[]; members: { id: string; name: string; email: string }[] };
+export type User = { id: string; name: string; username: string; email: string; role: string; is_active: boolean; can_edit: boolean; can_access_settings: boolean; permissions: string[]; groups: { id: string; name: string; can_edit: boolean; permissions: string[] }[] };
+export type Group = { id: string; name: string; description: string; can_edit: boolean; permissions: string[]; members: { id: string; name: string; username: string; email: string }[] };
 export type PermissionItem = { key: string; label: string; category: string };
+export type AdminSummary = {
+  pages: number; published: number; drafts: number; users: number;
+  active_users: number; groups: number; topics: number; files: number;
+};
 export type AdminSettings = {
   site_name: string; registration_enabled: boolean; session_days: number; max_upload_size_mb: number;
   database_url_configured: boolean; database_url_masked: string; database_managed_by_environment: boolean; current_database_driver: string;

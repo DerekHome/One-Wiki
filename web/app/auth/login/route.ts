@@ -8,12 +8,12 @@ function backendBase(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const form = await request.formData();
-  const email = String(form.get("email") ?? "");
+  const username = String(form.get("username") ?? "");
   const password = String(form.get("password") ?? "");
   const response = await fetch(`${backendBase(request)}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ username, password }),
   });
 
   const redirectUrl = new URL(response.ok ? "/" : "/login?error=1", request.url);

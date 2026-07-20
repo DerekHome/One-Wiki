@@ -9,8 +9,23 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="zh-CN">
-      <body>{children}</body>
+    <html lang="zh-CN" suppressHydrationWarning>
+      <body>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(() => {
+  try {
+    const saved = localStorage.getItem("one-wiki-theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    if ((saved || (prefersDark ? "dark" : "light")) === "dark") {
+      document.documentElement.classList.add("dark");
+    }
+  } catch {}
+})();`
+          }}
+        />
+        {children}
+      </body>
     </html>
   );
 }

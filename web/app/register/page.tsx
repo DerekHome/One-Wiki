@@ -5,8 +5,7 @@ import { FormEvent, useState } from "react";
 import { api } from "@/lib/api";
 
 export default function RegisterPage() {
-  const [displayName, setDisplayName] = useState("");
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,7 +15,7 @@ export default function RegisterPage() {
     setError("");
     setLoading(true);
     try {
-      await api("/auth/register", { method: "POST", body: JSON.stringify({ display_name: displayName, email, password }) });
+      await api("/auth/register", { method: "POST", body: JSON.stringify({ username, password }) });
       window.location.href = "/";
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "\u6ce8\u518c\u5931\u8d25");
@@ -33,12 +32,8 @@ export default function RegisterPage() {
         <p>&#x65b0;&#x8d26;&#x53f7;&#x4f1a;&#x5148;&#x8fdb;&#x5165;&#x53ea;&#x8bfb;&#x5206;&#x7ec4;&#xff0c;&#x7ba1;&#x7406;&#x5458;&#x53ef;&#x4ee5;&#x518d;&#x52a0;&#x5165;&#x53ef;&#x7f16;&#x8f91;&#x5206;&#x7ec4;&#x3002;</p>
         <div className="form-grid">
           <div className="field">
-            <label>&#x59d3;&#x540d;</label>
-            <input value={displayName} onChange={(event) => setDisplayName(event.target.value)} required />
-          </div>
-          <div className="field">
-            <label>&#x90ae;&#x7bb1;</label>
-            <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+            <label>用户名</label>
+            <input value={username} onChange={(event) => setUsername(event.target.value)} required />
           </div>
           <div className="field">
             <label>&#x5bc6;&#x7801;</label>

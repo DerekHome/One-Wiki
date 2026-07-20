@@ -15,11 +15,18 @@ def test_login_and_read_published_knowledge():
     with TestClient(app) as client:
         health = client.get("/health")
         assert health.status_code == 200
-        login = client.post("/api/v1/auth/login", json={"email": "admin@example.com", "password": "ChangeMe123!"})
+        login = client.post("/api/v1/auth/login", json={"username": "系统管理员", "password": "ChangeMe123!"})
         assert login.status_code == 200
+        assert login.json()["user"]["username"] == "系统管理员"
         pages = client.get("/api/v1/pages")
         assert pages.status_code == 200
         assert pages.json()[0]["slug"] == "welcome"
+
+
+def test_legacy_email_login_still_works():
+    with TestClient(app) as client:
+        login = client.post("/api/v1/auth/login", json={"email": "admin@example.com", "password": "ChangeMe123!"})
+        assert login.status_code == 200
 
 
 def test_user_can_favorite_and_list_published_knowledge():
@@ -111,17 +118,40 @@ def test_settings_center_respects_group_permissions():
         client.post("/api/v1/auth/logout")
         assert client.post("/api/v1/auth/login", json={"email": email, "password": "ChangeMe123!"}).status_code == 200
         assert client.get("/api/v1/admin/settings").status_code == 200
+        assert client.get("/api/v1/admin/summary").status_code == 403
         assert client.put("/api/v1/admin/settings", json={"site_name": "Forbidden"}).status_code == 403
+
+
+def test_statistics_permission_allows_summary_without_other_management_permissions():
+    with TestClient(app) as client:
+        email = f"statistics-{uuid4()}@example.com"
+        registered = client.post("/api/v1/auth/register", json={"email": email, "password": "ChangeMe123!", "display_name": "Statistics Viewer"})
+        user_id = registered.json()["user"]["id"]
+        client.post("/api/v1/auth/logout")
+        assert client.post("/api/v1/auth/login", json={"email": "admin@example.com", "password": "ChangeMe123!"}).status_code == 200
+        group = client.post("/api/v1/admin/groups", json={"name": f"Statistics {uuid4()}", "description": "", "permissions": ["statistics.view"]})
+        assert group.status_code == 200
+        assert client.post(f"/api/v1/admin/groups/{group.json()['id']}/members", json={"user_id": user_id}).status_code == 200
+        client.post("/api/v1/auth/logout")
+        login = client.post("/api/v1/auth/login", json={"email": email, "password": "ChangeMe123!"})
+        assert login.status_code == 200
+        assert login.json()["user"]["can_access_settings"] is True
+        summary = client.get("/api/v1/admin/summary")
+        assert summary.status_code == 200
+        assert {"pages", "published", "drafts", "users", "active_users", "groups", "topics", "files"} <= summary.json().keys()
 
 
 def test_admin_can_create_update_and_deactivate_user():
     with TestClient(app) as client:
         assert client.post("/api/v1/auth/login", json={"email": "admin@example.com", "password": "ChangeMe123!"}).status_code == 200
-        email = f"managed-{uuid4()}@example.com"
-        created = client.post("/api/v1/admin/users", json={"email": email, "display_name": "Managed User", "password": "ChangeMe123!", "role": "reader", "is_active": True})
+        username = f"managed-{uuid4()}"
+        created = client.post("/api/v1/admin/users", json={"username": username, "password": "ChangeMe123!", "role": "reader", "is_active": True})
         assert created.status_code == 200
         user = created.json()
-        updated = client.put(f"/api/v1/admin/users/{user['id']}", json={"email": email, "display_name": "Managed Editor", "role": "editor", "is_active": True})
+        assert user["username"] == username
+        assert client.post("/api/v1/auth/login", json={"username": username, "password": "ChangeMe123!"}).status_code == 200
+        assert client.post("/api/v1/auth/login", json={"email": "admin@example.com", "password": "ChangeMe123!"}).status_code == 200
+        updated = client.put(f"/api/v1/admin/users/{user['id']}", json={"username": username, "display_name": "Managed Editor", "role": "editor", "is_active": True})
         assert updated.status_code == 200
         assert updated.json()["role"] == "editor"
         assert client.delete(f"/api/v1/admin/users/{user['id']}").status_code == 200

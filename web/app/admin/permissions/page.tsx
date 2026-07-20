@@ -99,7 +99,7 @@ export default function PermissionPage() {
 
           <form className="permission-panel" onSubmit={assignGroup}>
             <h2>&#x5206;&#x914d;&#x7528;&#x6237;</h2>
-            <div className="field"><label>&#x7528;&#x6237;</label><select value={selectedUser} onChange={(event) => setSelectedUser(event.target.value)}>{users.map((user) => <option key={user.id} value={user.id}>{user.name} ? {user.email}</option>)}</select></div>
+            <div className="field"><label>&#x7528;&#x6237;</label><select value={selectedUser} onChange={(event) => setSelectedUser(event.target.value)}>{users.map((user) => <option key={user.id} value={user.id}>{user.name} · {user.username}</option>)}</select></div>
             <div className="field"><label>&#x5206;&#x7ec4;</label><select value={selectedGroup} onChange={(event) => setSelectedGroup(event.target.value)}>{groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</select></div>
             <button className="primary" disabled={loading || !selectedUser || !selectedGroup}>&#x52a0;&#x5165;&#x5206;&#x7ec4;</button>
           </form>

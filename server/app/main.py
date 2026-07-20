@@ -123,9 +123,10 @@ PERMISSION_CATALOG = [
     {"key": "database.configure", "label": "配置数据库", "category": "系统设置"},
     {"key": "ai.configure", "label": "配置 AI 服务", "category": "系统设置"},
     {"key": "audit.view", "label": "查看审计信息", "category": "安全与审计"},
+    {"key": "statistics.view", "label": "\u67e5\u770b\u6570\u636e\u7edf\u8ba1", "category": "\u7cfb\u7edf\u7ba1\u7406"},
 ]
 ALL_PERMISSIONS = {item["key"] for item in PERMISSION_CATALOG}
-SETTINGS_PERMISSIONS = {key for key in ALL_PERMISSIONS if key.endswith(".manage") or key.endswith(".configure") or key in {"settings.view", "audit.view"}}
+SETTINGS_PERMISSIONS = {key for key in ALL_PERMISSIONS if key.endswith(".manage") or key.endswith(".configure") or key in {"settings.view", "statistics.view", "audit.view"}}
 
 
 def group_permissions(db: Session, group_id: str) -> set[str]:
@@ -175,12 +176,33 @@ def user_can_edit(db: Session, user: User) -> bool:
     return has_permission(db, user, "content.edit")
 
 
+def normalize_username(value: str) -> str:
+    username = value.strip()
+    if not username:
+        raise HTTPException(422, "用户名不能为空")
+    return username
+
+
+def find_user_by_login(db: Session, identifier: str) -> User | None:
+    value = normalize_username(identifier)
+    lowered = value.lower()
+    return db.scalar(
+        select(User).where(
+            or_(
+                func.lower(User.email) == lowered,
+                func.lower(User.display_name) == lowered,
+            )
+        )
+    )
+
+
 def serialize_user(db: Session, user: User) -> dict:
     groups = user_groups(db, user.id)
     permissions = sorted(user_permissions(db, user))
     return {
         "id": user.id,
         "name": user.display_name,
+        "username": user.display_name,
         "email": user.email,
         "role": user.role,
         "is_active": user.is_active,
@@ -207,7 +229,7 @@ def serialize_group(db: Session, group: Group) -> dict:
         "description": group.description,
         "can_edit": group.can_edit,
         "permissions": sorted(permissions),
-        "members": [{"id": user.id, "name": user.display_name, "email": user.email} for user in members],
+        "members": [{"id": user.id, "name": user.display_name, "username": user.display_name, "email": user.email} for user in members],
     }
 
 
@@ -234,7 +256,7 @@ def serialize_page(db: Session, page: KnowledgePage) -> dict:
         "status": page.status,
         "topic": {"id": topic.id, "name": topic.name, "slug": topic.slug} if topic else None,
         "tags": page_tags(db, page.id),
-        "owner": {"id": owner.id, "name": owner.display_name, "email": owner.email} if owner else None,
+        "owner": {"id": owner.id, "name": owner.display_name, "username": owner.display_name, "email": owner.email} if owner else None,
         "current_version": page.current_version,
         "review_at": page.review_at,
         "created_at": page.created_at,
@@ -295,14 +317,16 @@ def settings_user(
 
 
 class LoginInput(BaseModel):
-    email: str
+    username: str | None = None
+    email: str | None = None
     password: str
 
 
 class RegisterInput(BaseModel):
-    email: str
+    username: str | None = None
+    email: str | None = None
     password: str = Field(min_length=8, max_length=128)
-    display_name: str = Field(min_length=1, max_length=120)
+    display_name: str | None = Field(default=None, max_length=120)
 
 
 class GroupInput(BaseModel):
@@ -317,16 +341,18 @@ class GroupMemberInput(BaseModel):
 
 
 class UserCreateInput(BaseModel):
-    email: str
-    display_name: str = Field(min_length=1, max_length=120)
+    username: str | None = None
+    email: str | None = None
+    display_name: str | None = Field(default=None, max_length=120)
     password: str = Field(min_length=8, max_length=128)
     role: str = "reader"
     is_active: bool = True
 
 
 class UserUpdateInput(BaseModel):
-    email: str
-    display_name: str = Field(min_length=1, max_length=120)
+    username: str | None = None
+    email: str | None = None
+    display_name: str | None = Field(default=None, max_length=120)
     password: str | None = Field(default=None, min_length=8, max_length=128)
     role: str = "reader"
     is_active: bool = True
@@ -459,10 +485,13 @@ def health():
 
 @app.post("/api/v1/auth/login")
 def login(payload: LoginInput, response: Response, db: Annotated[Session, Depends(get_db)]):
-    user = db.scalar(select(User).where(User.email == payload.email.lower().strip()))
+    identifier = payload.username or payload.email
+    if not identifier:
+        raise HTTPException(422, "请输入用户名")
+    user = find_user_by_login(db, identifier)
     if user is None or not user.is_active or not verify_password(payload.password, user.password_hash):
         logger.warning("login_failed")
-        raise HTTPException(401, "邮箱或密码错误")
+        raise HTTPException(401, "用户名或密码错误")
     token = new_token()
     db.add(SessionToken(token_hash=token_hash(token), user_id=user.id, expires_at=utcnow() + timedelta(days=SESSION_DAYS)))
     db.commit()
@@ -475,10 +504,11 @@ def login(payload: LoginInput, response: Response, db: Annotated[Session, Depend
 def register(payload: RegisterInput, response: Response, db: Annotated[Session, Depends(get_db)]):
     if not public_runtime_settings()["registration_enabled"]:
         raise HTTPException(403, "系统已关闭自主注册")
-    email = payload.email.lower().strip()
-    if db.scalar(select(User).where(User.email == email)) is not None:
-        raise HTTPException(409, "\u90ae\u7bb1\u5df2\u6ce8\u518c")
-    user = User(email=email, display_name=payload.display_name.strip(), password_hash=hash_password(payload.password), role="reader")
+    username = normalize_username(payload.username or payload.email or "")
+    display_name = normalize_username(payload.display_name or username)
+    if db.scalar(select(User).where(or_(func.lower(User.email) == username.lower(), func.lower(User.display_name) == username.lower()))) is not None:
+        raise HTTPException(409, "用户名已被使用")
+    user = User(email=username, display_name=display_name, password_hash=hash_password(payload.password), role="reader")
     db.add(user)
     db.flush()
     readers = db.scalar(select(Group).where(Group.name == "Readers"))
@@ -580,14 +610,15 @@ def list_users(db: Annotated[Session, Depends(get_db)], _: Annotated[User, Depen
 
 @app.post("/api/v1/admin/users")
 def create_user(payload: UserCreateInput, db: Annotated[Session, Depends(get_db)], actor: Annotated[User, Depends(require_permission("users.manage"))]):
-    email = payload.email.lower().strip()
+    username = normalize_username(payload.username or payload.email or "")
+    display_name = normalize_username(payload.display_name or username)
     if payload.role not in {"reader", "contributor", "editor", "admin"}:
         raise HTTPException(422, "无效的用户角色")
     if payload.role == "admin" and actor.role != "admin":
         raise HTTPException(403, "只有管理员可以创建管理员账号")
-    if db.scalar(select(User).where(User.email == email)) is not None:
-        raise HTTPException(409, "邮箱已注册")
-    user = User(email=email, display_name=payload.display_name.strip(), password_hash=hash_password(payload.password), role=payload.role, is_active=payload.is_active)
+    if db.scalar(select(User).where(or_(func.lower(User.email) == username.lower(), func.lower(User.display_name) == username.lower()))) is not None:
+        raise HTTPException(409, "用户名已被使用")
+    user = User(email=username, display_name=display_name, password_hash=hash_password(payload.password), role=payload.role, is_active=payload.is_active)
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -600,10 +631,16 @@ def update_user(user_id: str, payload: UserUpdateInput, db: Annotated[Session, D
     user = db.get(User, user_id)
     if user is None:
         raise HTTPException(404, "用户不存在")
-    email = payload.email.lower().strip()
-    duplicate = db.scalar(select(User).where(User.email == email, User.id != user.id))
+    username = normalize_username(payload.username or payload.email or "")
+    display_name = normalize_username(payload.display_name or username)
+    duplicate = db.scalar(
+        select(User).where(
+            User.id != user.id,
+            or_(func.lower(User.email) == username.lower(), func.lower(User.display_name) == username.lower()),
+        )
+    )
     if duplicate is not None:
-        raise HTTPException(409, "邮箱已被使用")
+        raise HTTPException(409, "用户名已被使用")
     if payload.role not in {"reader", "contributor", "editor", "admin"}:
         raise HTTPException(422, "无效的用户角色")
     if (user.role == "admin" or payload.role == "admin") and actor.role != "admin":
@@ -614,8 +651,8 @@ def update_user(user_id: str, payload: UserUpdateInput, db: Annotated[Session, D
         raise HTTPException(422, "系统必须保留至少一个有效管理员")
     if user.id == actor.id and not payload.is_active:
         raise HTTPException(422, "不能停用当前登录账号")
-    user.email = email
-    user.display_name = payload.display_name.strip()
+    user.email = username
+    user.display_name = display_name
     user.role = payload.role
     user.is_active = payload.is_active
     if payload.password:
@@ -967,11 +1004,15 @@ async def answer(payload: AnswerInput, db: Annotated[Session, Depends(get_db)], 
 
 
 @app.get("/api/v1/admin/summary")
-def admin_summary(db: Annotated[Session, Depends(get_db)], _: Annotated[User, Depends(admin_user)]):
+def admin_summary(db: Annotated[Session, Depends(get_db)], _: Annotated[User, Depends(require_permission("statistics.view"))]):
     return {
         "pages": db.scalar(select(func.count()).select_from(KnowledgePage)),
         "published": db.scalar(select(func.count()).select_from(KnowledgePage).where(KnowledgePage.status == "published")),
+        "drafts": db.scalar(select(func.count()).select_from(KnowledgePage).where(KnowledgePage.status == "draft")),
         "users": db.scalar(select(func.count()).select_from(User)),
+        "active_users": db.scalar(select(func.count()).select_from(User).where(User.is_active.is_(True))),
+        "groups": db.scalar(select(func.count()).select_from(Group)),
+        "topics": db.scalar(select(func.count()).select_from(Topic)),
         "files": db.scalar(select(func.count()).select_from(FileAsset)),
     }
 
