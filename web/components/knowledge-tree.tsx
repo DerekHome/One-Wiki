@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Article, CaretDown, CaretRight, Folder } from "@phosphor-icons/react";
+import { Article, CaretDown, CaretRight, Folder, Plus } from "@phosphor-icons/react";
 import { api, Page, Topic } from "@/lib/api";
 
 type TopicNode = Topic & {
@@ -102,7 +102,9 @@ export function KnowledgeTree() {
     <section className="knowledge-tree">
       <div className="tree-head">
         <h2>知识目录</h2>
-        <Link href="/knowledge/new">新增知识</Link>
+        <Link className="add-knowledge-button" href="/knowledge/new" aria-label="新增知识" title="新增知识">
+          <Plus size={15} weight="bold" />
+        </Link>
       </div>
       <ul className="tree-root">
         {tree.map((node) => <TopicBranch node={node} activeTopic={activeTopic} key={node.id} />)}

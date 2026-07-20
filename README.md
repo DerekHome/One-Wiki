@@ -4,6 +4,20 @@
 
 当前第一版已实现完整的知识流：**创建草稿 → 编辑 → 发布版本 → 搜索或 AI 引用**。
 
+## 系统截图
+
+### 知识首页
+
+![One WIKI 知识首页](docs/screenshots/one-wiki-home.png)
+
+### 设置中心
+
+![One WIKI 设置中心](docs/screenshots/one-wiki-settings.png)
+
+### 创建知识
+
+![One WIKI 创建知识](docs/screenshots/one-wiki-create-knowledge.png)
+
 ## 文档
 
 - [功能说明与产品边界](docs/FEATURES.md)
@@ -11,7 +25,7 @@
 
 ## 已实现
 
-- 邮箱密码登录与 `Reader`、`Contributor`、`Editor`、`Admin` 四级角色
+- 用户名密码登录与 `Reader`、`Contributor`、`Editor`、`Admin` 四级角色
 - 主题、标签、知识页面、草稿和发布版本
 - 中文关键词搜索
 - 本地磁盘附件上传、鉴权下载、UUID 存储键与 SHA-256 校验
@@ -58,7 +72,7 @@ cd 'F:\Projects\one wiki'
 默认管理员：
 
 ```text
-admin@example.com
+系统管理员
 ChangeMe123!
 ```
 

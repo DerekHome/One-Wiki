@@ -21,9 +21,10 @@
   --success: #248a3d;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03), 0 8px 24px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 18px 52px rgba(0, 0, 0, 0.09), 0 2px 8px rgba(0, 0, 0, 0.04);
-  --radius-sm: 10px;
-  --radius-md: 16px;
-  --radius-lg: 22px;
+  --radius-ui: 14px;
+  --radius-sm: var(--radius-ui);
+  --radius-md: var(--radius-ui);
+  --radius-lg: var(--radius-ui);
 }
 
 :root.dark {
@@ -249,7 +250,7 @@ button:disabled { cursor: not-allowed; opacity: 0.48; }
 }
 .tree-head { padding: 0 8px 11px; }
 .tree-head h2 { color: var(--ink); font-size: 15px; font-weight: 680; letter-spacing: -0.015em; }
-.tree-head a { color: var(--brand); font-size: 12px; font-weight: 590; text-decoration: none; }
+.tree-head a { text-decoration: none; }
 .tree-head a:hover { color: var(--brand-hover); }
 .tree-root { display: grid; gap: 2px; }
 .tree-children { margin-left: 13px; padding-left: 8px; border-left: 1px solid rgba(60,60,67,.12); }
@@ -323,6 +324,26 @@ button:disabled { cursor: not-allowed; opacity: 0.48; }
 .section-head { margin-bottom: 16px; align-items: center; }
 .section h2, .section-head h2 { color: var(--ink); font-size: 20px; font-weight: 680; letter-spacing: -0.025em; }
 .section-head a { color: var(--brand); font-size: 13px; font-weight: 590; text-decoration: none; }
+.add-knowledge-button {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(0,113,227,.12);
+  border-radius: 10px;
+  background: rgba(0,113,227,.08);
+  color: var(--brand);
+  box-shadow: inset 0 1px rgba(255,255,255,.42), 0 1px 2px rgba(0,0,0,.025);
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease, transform 100ms ease, box-shadow 140ms ease;
+}
+.add-knowledge-button:hover {
+  border-color: rgba(0,113,227,.22);
+  background: rgba(0,113,227,.13);
+  color: var(--brand-hover);
+  text-decoration: none;
+}
+.add-knowledge-button:active { transform: scale(.94); }
 
 /* Controls */
 .resource-filters {
@@ -704,6 +725,59 @@ button:disabled { cursor: not-allowed; opacity: 0.48; }
 :root.dark .member-chips button,
 :root.dark .member-chips > span { color: #8ec8ff; }
 :root.dark .auth { background: radial-gradient(circle at 50% 4%, rgba(10,132,255,.24), transparent 31rem), radial-gradient(circle at 18% 80%, rgba(191,90,242,.12), transparent 28rem), #101014; }
+
+/* Keep in-page controls visually consistent. Brand marks, toggles and chips keep their native shapes. */
+.knowledge-tree,
+.tree-topic,
+.sidebar-bottom,
+.header-user,
+.theme-switch,
+.resource-filters,
+.resource-filters select,
+.filter-search,
+.filter-count,
+.field input,
+.field textarea,
+.field select,
+.row-actions select,
+.primary,
+.secondary,
+.search-box button,
+.publish-link,
+.favorite-button,
+.edit-link,
+.attachment-upload,
+.permission-toggle,
+.danger-button,
+.danger-link,
+.add-knowledge-button,
+.page-card,
+.attachment-card,
+.content,
+.empty,
+.attachment-empty,
+.rich-text-editor,
+.answer,
+.citation,
+.notice,
+.auth-card,
+.settings-nav,
+.settings-nav button,
+.settings-panel,
+.settings-stats div,
+.settings-form.compact,
+.settings-split > .settings-form,
+.setting-switch,
+.settings-note,
+.settings-alert,
+.permission-panel,
+.permission-group,
+.permission-stats div,
+.permission-options label,
+.group-settings-card,
+.editor-toolbar button {
+  border-radius: var(--radius-ui);
+}
 
 @media (max-width: 1080px) {
   .app-shell { grid-template-columns: 248px minmax(0,1fr); }
