@@ -42,26 +42,28 @@ export function Shell({ children }: { children: React.ReactNode }) {
           <span className="logo-mark">W</span>
           <span className="logo-text"><strong>{siteName}</strong><small>{"\u56e2\u961f\u77e5\u8bc6\u8d44\u6e90\u5e93"}</small></span>
         </Link>
+        <button
+          className="theme-switch"
+          type="button"
+          role="switch"
+          aria-checked={theme === "dark"}
+          aria-label={theme === "dark" ? "\u5207\u6362\u5230\u4eae\u8272\u6a21\u5f0f" : "\u5207\u6362\u5230\u6697\u8272\u6a21\u5f0f"}
+          title={theme === "dark" ? "\u5207\u6362\u5230\u4eae\u8272\u6a21\u5f0f" : "\u5207\u6362\u5230\u6697\u8272\u6a21\u5f0f"}
+          data-theme={theme}
+          onClick={() => setTheme((value) => value === "dark" ? "light" : "dark")}
+        >
+          <span className="theme-switch-thumb" />
+          <span className="theme-switch-icon theme-switch-sun"><Sun size={15} weight="fill" /></span>
+          <span className="theme-switch-icon theme-switch-moon"><Moon size={15} weight="fill" /></span>
+        </button>
         <div className="header-utility">
-          <button
-            className="theme-switch"
-            type="button"
-            role="switch"
-            aria-checked={theme === "dark"}
-            aria-label={theme === "dark" ? "\u5207\u6362\u5230\u4eae\u8272\u6a21\u5f0f" : "\u5207\u6362\u5230\u6697\u8272\u6a21\u5f0f"}
-            title={theme === "dark" ? "\u5207\u6362\u5230\u4eae\u8272\u6a21\u5f0f" : "\u5207\u6362\u5230\u6697\u8272\u6a21\u5f0f"}
-            data-theme={theme}
-            onClick={() => setTheme((value) => value === "dark" ? "light" : "dark")}
-          >
-            <span className="theme-switch-thumb" />
-            <span className="theme-switch-icon theme-switch-sun"><Sun size={15} weight="fill" /></span>
-            <span className="theme-switch-icon theme-switch-moon"><Moon size={15} weight="fill" /></span>
-          </button>
           <div className="header-user">
             {user ? (
               <>
                 <span className="user-name">{user.name}</span>
-                <button className="icon-button logout-button" onClick={logout} title={"\u9000\u51fa\u767b\u5f55"} aria-label={"\u9000\u51fa\u767b\u5f55"}><SignOut size={17} /></button>
+                <span className="logout-tray">
+                  <button className="icon-button logout-button" onClick={logout} title={"\u9000\u51fa\u767b\u5f55"} aria-label={"\u9000\u51fa\u767b\u5f55"}><SignOut size={17} /></button>
+                </span>
               </>
             ) : (
               <Link href="/login">{"\u767b\u5f55"}</Link>
