@@ -50,7 +50,7 @@ function HomeContent() {
     return visiblePages
       .filter((page) => {
         if (!keyword) return true;
-        const searchable = [page.title, page.summary, page.topic?.name ?? "", page.tags.join(" "), page.content].join(" ").toLowerCase();
+        const searchable = [page.title, page.summary, page.topic?.name ?? "", page.tags.join(" ")].join(" ").toLowerCase();
         return searchable.includes(keyword);
       })
       .filter((page) => {

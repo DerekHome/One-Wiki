@@ -159,6 +159,58 @@ def test_admin_can_create_update_and_deactivate_user():
         assert next(item for item in users if item["id"] == user["id"])["is_active"] is False
 
 
+def test_list_pages_omit_full_content():
+    with TestClient(app) as client:
+        login = client.post("/api/v1/auth/login", json={"email": "admin@example.com", "password": "ChangeMe123!"})
+        assert login.status_code == 200
+        pages = client.get("/api/v1/pages")
+        assert pages.status_code == 200
+        assert pages.json()
+        assert "content" not in pages.json()[0]
+
+
+def test_draft_page_is_not_searchable_until_publish():
+    with TestClient(app) as client:
+        assert client.post("/api/v1/auth/login", json={"email": "admin@example.com", "password": "ChangeMe123!"}).status_code == 200
+        title = f"Hidden draft {uuid4()}"
+        created = client.post("/api/v1/pages", json={"title": title, "summary": "draft only", "content": "draft body", "tags": []})
+        assert created.status_code == 200
+        page = created.json()
+        assert page["status"] == "draft"
+        search = client.get(f"/api/v1/search?q={title}")
+        assert search.status_code == 200
+        assert page["id"] not in [item["id"] for item in search.json()]
+        published = client.post(f"/api/v1/pages/{page['id']}/publish", json={"change_note": "first release"})
+        assert published.status_code == 200
+        assert published.json()["status"] == "published"
+        search_after = client.get(f"/api/v1/search?q={title}")
+        assert page["id"] in [item["id"] for item in search_after.json()]
+
+
+def test_published_page_versions_are_readable():
+    with TestClient(app) as client:
+        assert client.post("/api/v1/auth/login", json={"email": "admin@example.com", "password": "ChangeMe123!"}).status_code == 200
+        page = client.get("/api/v1/pages").json()[0]
+        versions = client.get(f"/api/v1/pages/{page['id']}/versions")
+        assert versions.status_code == 200
+        assert versions.json()
+        detail = client.get(f"/api/v1/pages/{page['id']}/versions/{versions.json()[0]['version_no']}")
+        assert detail.status_code == 200
+        assert detail.json()["content"]
+
+
+def test_chinese_search_matches_partial_terms():
+    with TestClient(app) as client:
+        assert client.post("/api/v1/auth/login", json={"email": "admin@example.com", "password": "ChangeMe123!"}).status_code == 200
+        title = f"客户成功实践{uuid4().hex[:6]}"
+        created = client.post("/api/v1/pages", json={"title": title, "summary": "帮助团队理解客户成功", "content": "详细说明", "tags": []})
+        page_id = created.json()["id"]
+        client.post(f"/api/v1/pages/{page_id}/publish", json={"change_note": "publish"})
+        search = client.get("/api/v1/search?q=客户成功")
+        assert search.status_code == 200
+        assert page_id in [item["id"] for item in search.json()]
+
+
 def test_admin_can_permanently_delete_document():
     with TestClient(app) as client:
         assert client.post("/api/v1/auth/login", json={"email": "admin@example.com", "password": "ChangeMe123!"}).status_code == 200

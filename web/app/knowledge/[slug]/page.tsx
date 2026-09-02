@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { Play, X } from "@phosphor-icons/react";
 import { Shell } from "@/components/shell";
 import { AttachmentLibrary } from "@/components/attachment-library";
+import { VersionHistory } from "@/components/version-history";
 import { api, formatDate, Page, User } from "@/lib/api";
 
 function Content({ text }: { text: string }) {
@@ -19,6 +20,18 @@ function Content({ text }: { text: string }) {
   })}</article>;
 }
 
+function reviewLabel(reviewAt: string | null) {
+  if (!reviewAt) return null;
+  const due = new Date(reviewAt);
+  if (Number.isNaN(due.getTime())) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
+  if (due < today) return `复核已逾期（${formatDate(reviewAt)}）`;
+  if (due.getTime() === today.getTime()) return "今日需复核";
+  return `下次复核 ${formatDate(reviewAt)}`;
+}
+
 export default function KnowledgePage() {
   const params = useParams<{ slug: string }>();
   const presentationRef = useRef<HTMLDivElement | null>(null);
@@ -27,6 +40,7 @@ export default function KnowledgePage() {
   const [presenting, setPresenting] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState("");
+
   useEffect(() => {
     api<Page>(`/pages/${params.slug}`).then(setPage).catch((e) => setError(e.message));
     api<Page[]>("/favorites").then((items) => setFavorite(items.some((item) => item.slug === params.slug))).catch(() => setFavorite(false));
@@ -64,9 +78,14 @@ export default function KnowledgePage() {
 
   async function toggleFavorite() {
     if (!page) return;
-    try { const result = await api<{ active: boolean }>(`/pages/${page.id}/favorite`, { method: "POST" }); setFavorite(result.active); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : "收藏失败"); }
+    try {
+      const result = await api<{ active: boolean }>(`/pages/${page.id}/favorite`, { method: "POST" });
+      setFavorite(result.active);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "收藏失败");
+    }
   }
+
   async function deletePage() {
     if (!page || !window.confirm(`确定永久删除“${page.title}”吗？此操作不可恢复。`)) return;
     try {
@@ -76,10 +95,57 @@ export default function KnowledgePage() {
       setError(cause instanceof Error ? cause.message : "删除失败");
     }
   }
+
   if (error) return <Shell><div className="empty">{error}。请先登录或返回首页。</div></Shell>;
   if (!page) return <Shell><div className="empty">正在加载知识…</div></Shell>;
-  const isAdmin = user?.role === "admin";
-  return <Shell><header className="page-header"><Link href="/" className="crumb">知识库 / {page.topic?.name ?? "未分类"}</Link><div className="page-title-row"><h1>{page.title}</h1><div className="page-actions">{isAdmin ? <><Link className="edit-link" href={`/knowledge/${page.id}/edit`}>编辑</Link><button type="button" className="danger-link" onClick={deletePage}>删除</button></> : <><button type="button" className="presentation-button" onClick={openPresentation} aria-label="进入演示模式" title="演示模式"><Play size={18} weight="fill" /></button><button type="button" className={`favorite-button${favorite ? " active" : ""}`} onClick={toggleFavorite} aria-pressed={favorite}>收藏</button></>}</div></div><p className="summary">{page.summary}</p>
-    <div className="meta-row"><span>负责人：{page.owner?.name ?? "未设置"}</span><span>{page.status === "published" ? `已验证版本 ${page.current_version}` : "草稿，尚未发布"}</span><span>更新于 {formatDate(page.updated_at)}</span>{page.tags.map((tag) => <span className="tag" key={tag}>#{tag}</span>)}</div>
-  </header><Content text={page.content} /><AttachmentLibrary pageId={page.id} /><div ref={presentationRef} className={`presentation-mode${presenting ? " active" : ""}`} aria-hidden={!presenting}><button type="button" className="presentation-close" onClick={closePresentation} aria-label="退出演示模式" title="退出演示模式"><X size={22} weight="bold" /></button><article className="presentation-stage"><div className="presentation-kicker">{page.topic?.name ?? "未分类"} · {formatDate(page.updated_at)}</div><h1>{page.title}</h1>{page.summary && <p className="presentation-summary">{page.summary}</p>}<Content text={page.content} /></article></div></Shell>;
+
+  const canEdit = Boolean(user?.can_edit);
+  const canDelete = Boolean(user?.permissions.includes("content.delete"));
+  const reviewNotice = reviewLabel(page.review_at);
+
+  return (
+    <Shell>
+      <header className="page-header">
+        <Link href="/" className="crumb">知识库 / {page.topic?.name ?? "未分类"}</Link>
+        <div className="page-title-row">
+          <h1>{page.title}</h1>
+          <div className="page-actions">
+            {canEdit && <Link className="edit-link" href={`/knowledge/${page.id}/edit`}>编辑</Link>}
+            {canDelete && <button type="button" className="danger-link" onClick={deletePage}>删除</button>}
+            {page.status === "published" && (
+              <>
+                <button type="button" className="presentation-button" onClick={openPresentation} aria-label="进入演示模式" title="演示模式"><Play size={18} weight="fill" /></button>
+                <button type="button" className={`favorite-button${favorite ? " active" : ""}`} onClick={toggleFavorite} aria-pressed={favorite}>收藏</button>
+              </>
+            )}
+          </div>
+        </div>
+        <p className="summary">{page.summary}</p>
+        <div className="meta-row">
+          <span>负责人：{page.owner?.name ?? "未设置"}</span>
+          <span>{page.status === "published" ? `已验证版本 ${page.current_version}` : "草稿，尚未发布"}</span>
+          <span>更新于 {formatDate(page.updated_at)}</span>
+          {reviewNotice && <span className={reviewNotice.includes("逾期") ? "review-overdue" : "review-due"}>{reviewNotice}</span>}
+          {page.tags.map((tag) => <span className="tag" key={tag}>#{tag}</span>)}
+        </div>
+        {page.status === "draft" && canEdit && (
+          <div className="notice">这是草稿，尚未发布。搜索和 AI 问答不会引用此内容。</div>
+        )}
+      </header>
+      <Content text={page.content ?? ""} />
+      <AttachmentLibrary pageId={page.id} />
+      {page.status === "published" && page.current_version > 0 && (
+        <VersionHistory pageId={page.id} currentVersion={page.current_version} />
+      )}
+      <div ref={presentationRef} className={`presentation-mode${presenting ? " active" : ""}`} aria-hidden={!presenting}>
+        <button type="button" className="presentation-close" onClick={closePresentation} aria-label="退出演示模式" title="退出演示模式"><X size={22} weight="bold" /></button>
+        <article className="presentation-stage">
+          <div className="presentation-kicker">{page.topic?.name ?? "未分类"} · {formatDate(page.updated_at)}</div>
+          <h1>{page.title}</h1>
+          {page.summary && <p className="presentation-summary">{page.summary}</p>}
+          <Content text={page.content ?? ""} />
+        </article>
+      </div>
+    </Shell>
+  );
 }

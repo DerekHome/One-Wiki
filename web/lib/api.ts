@@ -2,10 +2,15 @@ export const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:80
 
 export type Topic = { id: string; name: string; slug: string; description: string; parent_id: string | null };
 export type Page = {
-  id: string; slug: string; title: string; summary: string; content: string; status: string;
-  topic: Topic | null; tags: string[]; current_version: number; updated_at: string;
+  id: string; slug: string; title: string; summary: string; content?: string; status: string;
+  topic: Topic | null; tags: string[]; current_version: number; review_at: string | null; updated_at: string;
   owner: { name: string; username: string; email: string } | null;
 };
+export type PageVersion = {
+  id: string; version_no: number; title: string; change_note: string; created_at: string;
+  created_by: { name: string; username: string } | null;
+};
+export type PageVersionDetail = PageVersion & { summary: string; content: string };
 export type User = { id: string; name: string; username: string; email: string; role: string; is_active: boolean; can_edit: boolean; can_access_settings: boolean; permissions: string[]; groups: { id: string; name: string; can_edit: boolean; permissions: string[] }[] };
 export type Group = { id: string; name: string; description: string; can_edit: boolean; permissions: string[]; members: { id: string; name: string; username: string; email: string }[] };
 export type PermissionItem = { key: string; label: string; category: string };
