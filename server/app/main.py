@@ -244,15 +244,14 @@ def serialize_file(asset: FileAsset) -> dict:
     }
 
 
-def serialize_page(db: Session, page: KnowledgePage) -> dict:
+def serialize_page(db: Session, page: KnowledgePage, *, include_content: bool = True) -> dict:
     topic = db.get(Topic, page.topic_id) if page.topic_id else None
     owner = db.get(User, page.owner_id)
-    return {
+    payload = {
         "id": page.id,
         "slug": page.slug,
         "title": page.title,
         "summary": page.summary,
-        "content": page.content,
         "status": page.status,
         "topic": {"id": topic.id, "name": topic.name, "slug": topic.slug} if topic else None,
         "tags": page_tags(db, page.id),
@@ -262,6 +261,33 @@ def serialize_page(db: Session, page: KnowledgePage) -> dict:
         "created_at": page.created_at,
         "updated_at": page.updated_at,
     }
+    if include_content:
+        payload["content"] = page.content
+    return payload
+
+
+def page_readable(db: Session, page: KnowledgePage, user: User) -> bool:
+    if page.status == "published":
+        return True
+    return user_can_edit(db, user) or page.owner_id == user.id
+
+
+def search_terms(query: str) -> list[str]:
+    cleaned = query.strip()
+    if not cleaned:
+        return []
+    terms = [cleaned]
+    for part in re.split(r"[\s,，。！？；;、]+", cleaned):
+        part = part.strip()
+        if not part or part in terms:
+            continue
+        terms.append(part)
+        if re.search(r"[\u4e00-\u9fff]", part) and len(part) >= 2:
+            for index in range(len(part) - 1):
+                gram = part[index : index + 2]
+                if gram not in terms:
+                    terms.append(gram)
+    return terms[:8]
 
 
 def current_user(
@@ -599,7 +625,7 @@ def list_admin_pages(db: Annotated[Session, Depends(get_db)], user: Annotated[Us
     if not ({"content.edit", "content.delete"} & permissions):
         raise HTTPException(403, "需要文档管理权限")
     pages = db.scalars(select(KnowledgePage).order_by(desc(KnowledgePage.updated_at)).limit(200)).all()
-    return [serialize_page(db, page) for page in pages]
+    return [serialize_page(db, page, include_content=False) for page in pages]
 
 
 @app.get("/api/v1/admin/users")
@@ -782,12 +808,13 @@ def list_pages(
     db: Annotated[Session, Depends(get_db)],
     topic_id: str | None = None,
     limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
 ):
     statement = select(KnowledgePage).where(KnowledgePage.status == "published")
     if topic_id:
         statement = statement.where(KnowledgePage.topic_id == topic_id)
-    pages = db.scalars(statement.order_by(desc(KnowledgePage.updated_at)).limit(limit)).all()
-    return [serialize_page(db, page) for page in pages]
+    pages = db.scalars(statement.order_by(desc(KnowledgePage.updated_at)).offset(offset).limit(limit)).all()
+    return [serialize_page(db, page, include_content=False) for page in pages]
 
 
 @app.get("/api/v1/pages/drafts")
@@ -797,13 +824,13 @@ def list_draft_pages(db: Annotated[Session, Depends(get_db)], user: Annotated[Us
         statement = statement.where(KnowledgePage.owner_id == user.id)
     pages = db.scalars(statement.order_by(desc(KnowledgePage.updated_at))).all()
     logger.info("draft_pages_listed count=%s actor_id=%s", len(pages), user.id)
-    return [serialize_page(db, page) for page in pages]
+    return [serialize_page(db, page, include_content=False) for page in pages]
 
 
 @app.get("/api/v1/pages/{slug}")
 def get_page(slug: str, db: Annotated[Session, Depends(get_db)], user: Annotated[User, Depends(current_user)]):
     page = db.scalar(select(KnowledgePage).where(KnowledgePage.slug == slug))
-    if page is None or (page.status != "published" and not user_can_edit(db, user) and page.owner_id != user.id):
+    if page is None or not page_readable(db, page, user):
         raise HTTPException(404, "知识页面不存在")
     return serialize_page(db, page)
 
@@ -891,9 +918,46 @@ def delete_page(page_id: str, db: Annotated[Session, Depends(get_db)], user: Ann
 
 
 @app.get("/api/v1/pages/{page_id}/versions")
-def versions(page_id: str, db: Annotated[Session, Depends(get_db)], _: Annotated[User, Depends(editor_user)]):
+def versions(page_id: str, db: Annotated[Session, Depends(get_db)], user: Annotated[User, Depends(current_user)]):
+    page = db.get(KnowledgePage, page_id)
+    if page is None or not page_readable(db, page, user):
+        raise HTTPException(404, "知识页面不存在")
     rows = db.scalars(select(PageVersion).where(PageVersion.page_id == page_id).order_by(desc(PageVersion.version_no))).all()
-    return [{"id": row.id, "version_no": row.version_no, "change_note": row.change_note, "created_at": row.created_at} for row in rows]
+    result = []
+    for row in rows:
+        author = db.get(User, row.created_by)
+        result.append(
+            {
+                "id": row.id,
+                "version_no": row.version_no,
+                "title": row.title,
+                "change_note": row.change_note,
+                "created_at": row.created_at,
+                "created_by": {"name": author.display_name, "username": author.display_name} if author else None,
+            }
+        )
+    return result
+
+
+@app.get("/api/v1/pages/{page_id}/versions/{version_no}")
+def get_version(page_id: str, version_no: int, db: Annotated[Session, Depends(get_db)], user: Annotated[User, Depends(current_user)]):
+    page = db.get(KnowledgePage, page_id)
+    if page is None or not page_readable(db, page, user):
+        raise HTTPException(404, "知识页面不存在")
+    row = db.scalar(select(PageVersion).where(PageVersion.page_id == page_id, PageVersion.version_no == version_no))
+    if row is None:
+        raise HTTPException(404, "版本不存在")
+    author = db.get(User, row.created_by)
+    return {
+        "id": row.id,
+        "version_no": row.version_no,
+        "title": row.title,
+        "summary": row.summary,
+        "content": row.content,
+        "change_note": row.change_note,
+        "created_at": row.created_at,
+        "created_by": {"name": author.display_name, "username": author.display_name} if author else None,
+    }
 
 
 @app.get("/api/v1/search")
@@ -901,16 +965,27 @@ def search(
     q: str = Query(min_length=1, max_length=200),
     db: Session = Depends(get_db),
     _: User = Depends(current_user),
+    limit: int = Query(default=30, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
 ):
-    keyword = f"%{q.strip()}%"
+    terms = search_terms(q)
+    filters = [
+        or_(
+            KnowledgePage.title.ilike(f"%{term}%"),
+            KnowledgePage.summary.ilike(f"%{term}%"),
+            KnowledgePage.content.ilike(f"%{term}%"),
+        )
+        for term in terms
+    ]
     pages = db.scalars(
         select(KnowledgePage)
         .where(KnowledgePage.status == "published")
-        .where(or_(KnowledgePage.title.ilike(keyword), KnowledgePage.summary.ilike(keyword), KnowledgePage.content.ilike(keyword)))
+        .where(or_(*filters))
         .order_by(desc(KnowledgePage.updated_at))
-        .limit(30)
+        .offset(offset)
+        .limit(limit)
     ).all()
-    return [serialize_page(db, page) for page in pages]
+    return [serialize_page(db, page, include_content=False) for page in pages]
 
 
 @app.post("/api/v1/pages/{page_id}/favorite")
@@ -938,7 +1013,7 @@ def list_favorites(db: Annotated[Session, Depends(get_db)], user: Annotated[User
         .where(KnowledgePage.status == "published")
         .order_by(desc(Favorite.created_at))
     ).all()
-    return [serialize_page(db, page) for page in pages]
+    return [serialize_page(db, page, include_content=False) for page in pages]
 
 
 @app.post("/api/v1/files")
@@ -981,10 +1056,22 @@ def download_file(file_id: str, db: Annotated[Session, Depends(get_db)], _: Anno
 
 
 def retrieve_pages(db: Session, question: str) -> list[KnowledgePage]:
-    words = [word for word in re.split(r"\s+", question.strip()) if word]
-    terms = words[:5] or [question]
-    filters = [or_(KnowledgePage.title.ilike(f"%{term}%"), KnowledgePage.summary.ilike(f"%{term}%"), KnowledgePage.content.ilike(f"%{term}%")) for term in terms]
-    return db.scalars(select(KnowledgePage).where(KnowledgePage.status == "published").where(or_(*filters)).order_by(desc(KnowledgePage.updated_at)).limit(6)).all()
+    terms = search_terms(question) or [question.strip()]
+    filters = [
+        or_(
+            KnowledgePage.title.ilike(f"%{term}%"),
+            KnowledgePage.summary.ilike(f"%{term}%"),
+            KnowledgePage.content.ilike(f"%{term}%"),
+        )
+        for term in terms
+    ]
+    return db.scalars(
+        select(KnowledgePage)
+        .where(KnowledgePage.status == "published")
+        .where(or_(*filters))
+        .order_by(desc(KnowledgePage.updated_at))
+        .limit(6)
+    ).all()
 
 
 @app.post("/api/v1/ai/answers")
