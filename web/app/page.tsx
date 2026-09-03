@@ -64,37 +64,58 @@ function HomeContent() {
       });
   }, [query, sortOrder, timeRange, visiblePages]);
 
-  return <Shell>
-    <section className="section section-compact">
-      <div className="resource-filters" aria-label="知识筛选">
-        <label className="filter-search">
-          <MagnifyingGlass size={16} />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="按标题、摘要、标签或正文筛选" aria-label="按关键字筛选知识" />
-        </label>
-        <label>
-          <span>更新时间</span>
-          <select value={timeRange} onChange={(event) => setTimeRange(event.target.value)} aria-label="按更新时间筛选">
-            <option value="all">全部时间</option>
-            <option value="7">最近 7 天</option>
-            <option value="30">最近 30 天</option>
-            <option value="90">最近 90 天</option>
-          </select>
-        </label>
-        <label>
-          <span>排序</span>
-          <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value)} aria-label="排序方式">
-            <option value="newest">最新优先</option>
-            <option value="oldest">最早优先</option>
-          </select>
-        </label>
-        <span className="filter-count">{filteredPages.length} 条</span>
-      </div>
-    </section>
-    <section className="section resource-section">
-      <div className="section-head"><h2>{activeTopic ? activeTopic.name : "最近更新"}</h2></div>
-      {filteredPages.length ? <div className="cards">{filteredPages.map((page) => <PageCard page={page} key={page.id} />)}</div> : <div className="empty">{visiblePages.length ? "没有符合当前筛选条件的知识。" : selectedTopic ? "这个目录下还没有发布知识。" : "登录后即可浏览团队知识。"}</div>}
-    </section>
-  </Shell>;
+  return (
+    <Shell>
+      <header className="page-intro">
+        <h1>{activeTopic ? activeTopic.name : "知识库"}</h1>
+        <p>{activeTopic ? "浏览该目录下的全部知识" : "团队统一、可信的知识入口"}</p>
+      </header>
+
+      <section className="section section-compact">
+        <div className="resource-filters" aria-label="知识筛选">
+          <label className="filter-search">
+            <MagnifyingGlass size={17} aria-hidden />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="搜索标题、摘要或标签"
+              aria-label="按关键字筛选知识"
+            />
+          </label>
+          <label>
+            <span>更新时间</span>
+            <select value={timeRange} onChange={(event) => setTimeRange(event.target.value)} aria-label="按更新时间筛选">
+              <option value="all">全部时间</option>
+              <option value="7">最近 7 天</option>
+              <option value="30">最近 30 天</option>
+              <option value="90">最近 90 天</option>
+            </select>
+          </label>
+          <label>
+            <span>排序</span>
+            <select value={sortOrder} onChange={(event) => setSortOrder(event.target.value)} aria-label="排序方式">
+              <option value="newest">最新优先</option>
+              <option value="oldest">最早优先</option>
+            </select>
+          </label>
+          <span className="filter-count">{filteredPages.length} 条</span>
+        </div>
+      </section>
+
+      <section className="section resource-section">
+        <div className="section-head">
+          <h2>{activeTopic ? "目录内容" : "最近更新"}</h2>
+        </div>
+        {filteredPages.length ? (
+          <div className="cards">{filteredPages.map((page) => <PageCard page={page} key={page.id} />)}</div>
+        ) : (
+          <div className="empty">
+            {visiblePages.length ? "没有符合当前筛选条件的知识。" : selectedTopic ? "这个目录下还没有发布知识。" : "登录后即可浏览团队知识。"}
+          </div>
+        )}
+      </section>
+    </Shell>
+  );
 }
 
 export default function HomePage() {
