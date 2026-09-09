@@ -1,11 +1,90 @@
-server/.venv/
-server/__pycache__/
-server/app/__pycache__/
-server/tests/__pycache__/
-knowledge.db
-server/storage/
-server/logs/
-web/node_modules/
-web/.next/
-web/.env.local
+# Environment and secrets
 .env
+.env.*
+!.env.example
+*.secret
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Node / Vite / Nuxt
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+.pnpm-store/
+dist/
+.nuxt/
+.output/
+*.tsbuildinfo
+
+# Local databases and uploaded files
+*.db
+*.sqlite
+*.sqlite3
+apps/server/uploads/
+*.log
+
+# Alembic and temporary local artifacts
+migrations/alembic_generation.db
+apps/server/migrations/alembic_generation.db
+*.tmp
+*.temp
+
+# Test and coverage artifacts
+test-results/
+playwright-report/
+blob-report/
+
+# IDEs and editors
+.idea/
+.vscode/
+*.iml
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local tooling
+.claude/
+.codex/
+.agents/

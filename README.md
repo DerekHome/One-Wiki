@@ -1,114 +1,160 @@
-# 智识库（One Wiki）
+# 企业知识中心
 
-面向 100 人以内团队的纯知识平台。它不承担部门、项目、会议或任务协作，而是帮助团队把长期可复用的知识沉淀为可验证、可搜索、可被 AI 引用的内容。
+企业知识中心（Knowledge Center）是一套面向企业内部知识沉淀、检索和协作的 Web 系统。项目采用前后端分离架构，支持知识空间、成员权限、知识版本、标签、附件、全文检索、审计日志和 Agent 查询接口。
 
-当前第一版已实现完整的知识流：**创建草稿 → 编辑 → 发布版本 → 搜索或 AI 引用**。
+## 功能概览
 
-## 系统截图
+- 知识空间：创建空间并设置 public、internal 或 private 可见性。
+- 权限管理：系统角色和空间角色分离，支持 owner、admin、editor、viewer。
+- 知识管理：创建、编辑、发布、软删除、版本比较和历史版本恢复。
+- 内容导入：支持 Markdown 和 HTML 文件导入，并自动提取标题和摘要。
+- 附件管理：上传、下载和删除附件，使用独立存储标识避免同名文件覆盖。
+- 全文检索：按标题、正文、摘要、空间和标签检索已发布知识。
+- 模块系统：支持搜索等模块的启用、停用和配置管理。
+- Agent API：提供空间、知识、版本、关联内容和搜索查询接口。
+- 审计日志：记录登录、知识、空间、成员、附件和 Agent 操作。
 
-### 知识首页
+## 技术栈
 
-![One WIKI 知识首页](docs/screenshots/one-wiki-home.png)
+| 层次 | 技术 |
+| --- | --- |
+| 前端 | Vue 3、TypeScript、Vite、Tailwind CSS、Element Plus、Pinia、Axios |
+| 内容编辑 | TipTap、Marked |
+| 后端 | Python、FastAPI、SQLAlchemy、Alembic、Pydantic |
+| 数据库 | PostgreSQL 15 |
+| 认证 | JWT、Python `scrypt` 密码哈希，兼容旧版密码格式并自动升级 |
+| 测试 | Pytest、FastAPI TestClient、隔离 SQLite 内存数据库 |
 
-### 设置中心
+## 环境要求
 
-![One WIKI 设置中心](docs/screenshots/one-wiki-settings.png)
+- Python 3.11 或更高版本
+- Node.js 18 或更高版本
+- npm
+- Docker Desktop（用于启动 PostgreSQL）
 
-### 创建知识
+## 快速开始
 
-![One WIKI 创建知识](docs/screenshots/one-wiki-create-knowledge.png)
-
-## 文档
-
-- [功能说明与产品边界](docs/FEATURES.md)
-- [架构设计与关键决策](docs/ARCHITECTURE.md)
-
-## 已实现
-
-- 用户名密码登录与 `Reader`、`Contributor`、`Editor`、`Admin` 四级角色
-- 主题、标签、知识页面、草稿和发布版本
-- 中文关键词搜索
-- 本地磁盘附件上传、鉴权下载、UUID 存储键与 SHA-256 校验
-- 基于已发布内容的 AI 问答接口；未配置模型时返回带出处的检索结果
-- Next.js 前端与 FastAPI 后端
-- MySQL 8.4 默认数据库，SQLite 仅用于自动化测试或显式轻量配置
-- Windows 启动脚本、Docker Compose 配置、后端测试与前端生产构建
-
-## Docker 启动（推荐）
-
-Docker Compose 默认启动 MySQL、FastAPI 和 Next.js，并为数据库和附件分别创建持久化卷：
+在项目根目录复制环境配置：
 
 ```powershell
 Copy-Item .env.example .env
-# 部署前修改 .env 中的 MySQL 密码
-docker compose up -d --build
 ```
 
-浏览器打开 `http://localhost:3000`。MySQL 仅绑定到宿主机 `127.0.0.1:3306`，容器之间通过内部网络通信。
+开发环境可以使用 `.env.example` 中的默认 PostgreSQL 连接配置。生产环境必须修改 `DATABASE_URL`、`SECRET_KEY`、`CORS_ORIGINS` 等配置；`SECRET_KEY` 至少需要 32 个字符，不能使用示例值。
 
-## 在 Windows 上启动
-
-直接在 Windows 上运行前，请先准备 MySQL 8，并通过环境变量或设置中心配置 `DATABASE_URL`。默认连接地址为：
-
-```text
-mysql+pymysql://onewiki:onewiki_dev_password@127.0.0.1:3306/onewiki?charset=utf8mb4
-```
-
-打开两个 PowerShell 窗口，分别运行：
+### 1. 启动数据库
 
 ```powershell
-Set-ExecutionPolicy -Scope Process Bypass
-cd 'F:\Projects\one wiki'
-.\start-server.ps1
+docker compose up -d db
 ```
+
+### 2. 安装后端并初始化数据库
 
 ```powershell
-cd 'F:\Projects\one wiki'
-.\start-web.ps1
+Set-Location apps/server
+python -m pip install -r requirements.txt
+python -m alembic upgrade head
+python init_admin.py --username admin --password "请替换为强密码"
 ```
 
-浏览器打开 `http://localhost:3000`。
+`init_admin.py` 用于首次创建或重置管理员账户。公开注册接口只允许创建普通用户，不能通过请求参数创建管理员。
 
-默认管理员：
-
-```text
-系统管理员
-ChangeMe123!
-```
-
-首次启动后请立即修改默认密码。备份时必须同时保存 MySQL 数据库与 `server/storage`；Docker 部署需要备份 `mysql-data` 和 `knowledge-files` 两个卷。
-
-## AI 配置
-
-后端支持任意 OpenAI-Compatible 服务。设置以下环境变量后重启后端：
-
-```text
-AI_ENABLED=true
-LLM_BASE_URL=https://your-provider.example/v1
-LLM_API_KEY=...
-LLM_MODEL=...
-```
-
-AI 回答只使用已发布知识；当资料不足时应明确说明，而不是补全或猜测。
-
-## 工程结构
-
-```text
-server/   FastAPI、SQLAlchemy、知识 API、本地文件存储与 AI 适配层
-web/      Next.js 阅读、搜索、编辑和 AI 问答界面
-docs/     产品功能和架构设计文档
-infra/    后续部署配置预留
-```
-
-## 验证
+### 3. 启动后端
 
 ```powershell
-cd 'F:\Projects\one wiki'
-.\server\.venv\Scripts\python.exe -m pytest -q
-cd web
+python -m uvicorn app.main:app --reload --port 8000
+```
+
+后端 API 文档：
+
+- Swagger UI：<http://localhost:8000/docs>
+- ReDoc：<http://localhost:8000/redoc>
+- 存活检查：<http://localhost:8000/health>
+- 数据库就绪检查：<http://localhost:8000/ready>
+
+### 4. 安装并启动前端
+
+在新的终端窗口执行：
+
+```powershell
+Set-Location apps/web
+npm install
+npm run dev
+```
+
+前端默认运行在 <http://localhost:3000>。开发环境通过 Vite 代理访问后端；如需切换 API 地址，使用 `VITE_API_BASE_URL` 或 `VITE_API_PROXY_TARGET`，无需修改业务源码。
+
+## 测试与构建
+
+后端测试会使用隔离的 SQLite 内存数据库和临时附件目录，不会修改业务 PostgreSQL 数据：
+
+```powershell
+Set-Location apps/server
+python -m pytest -q
+```
+
+前端类型检查和生产构建：
+
+```powershell
+Set-Location apps/web
 npm run build
 ```
 
-## 初始化说明
+数据库迁移检查：
 
-数据库首次启动时会自动建表，并创建默认管理员、默认群组、默认目录和欢迎页。详细字段与默认数据见 [初始化字段与默认数据](docs/INITIALIZATION.md)。
+```powershell
+Set-Location apps/server
+python -m alembic heads
+python -m alembic upgrade head
+```
+
+正式数据库执行迁移前请先完成备份。`db_init.py` 仅保留用于本地一次性初始化，长期升级应使用 Alembic。
+
+## 目录结构
+
+```text
+knowledge-center/
+├─ apps/
+│  ├─ server/              # FastAPI 后端、模型、服务、路由、迁移和测试
+│  │  ├─ app/
+│  │  ├─ migrations/
+│  │  ├─ tests/
+│  │  └─ init_admin.py
+│  └─ web/                 # Vue 3 前端
+│     ├─ src/api/
+│     ├─ src/stores/
+│     ├─ src/views/
+│     └─ src/router/
+├─ docs/                   # 产品和技术文档
+├─ modules/                # 扩展模块相关目录
+├─ packages/               # 共享包预留目录
+├─ docker-compose.yml      # PostgreSQL 开发环境
+├─ .env.example            # 环境变量模板
+└─ RUNNING.md              # 启动和运行补充说明
+```
+
+## 配置说明
+
+| 变量 | 说明 | 示例 |
+| --- | --- | --- |
+| `DATABASE_URL` | PostgreSQL 连接字符串 | `postgresql://admin:password@localhost:5432/knowledge_center` |
+| `ENVIRONMENT` | 运行环境 | `development` / `production` |
+| `SECRET_KEY` | JWT 签名密钥 | 生产环境使用随机长密钥 |
+| `UPLOAD_DIR` | 附件存储目录 | `D:/Claude/knowledge-center/apps/server/uploads` |
+| `MAX_UPLOAD_SIZE_MB` | 单个附件大小上限 | `50` |
+| `CORS_ORIGINS` | 允许的前端来源，逗号分隔 | `http://localhost:3000` |
+| `VITE_API_BASE_URL` | 前端 API 前缀 | `/api/v1` |
+| `VITE_API_PROXY_TARGET` | Vite 开发代理目标 | `http://localhost:8000` |
+
+## 安全注意事项
+
+- 不要提交 `.env`、JWT 密钥、数据库密码或上传文件。
+- 生产环境必须设置安全的 `SECRET_KEY`，缺失或使用示例值时应用会拒绝启动。
+- 正文导入和 Markdown 渲染使用白名单过滤；新增富文本入口时也必须经过同等处理。
+- 生产环境请将 `CORS_ORIGINS` 限制为实际前端域名，并通过 HTTPS 暴露服务。
+
+## 当前验证状态
+
+当前代码已验证后端回归测试、Vue 类型检查、前端生产构建及 Alembic 临时 SQLite 升级/回滚流程。真实 PostgreSQL 迁移和浏览器端到端流程需要在相应运行环境中执行。
+
+更多运行细节见 [RUNNING.md](RUNNING.md)，开发进度见 [PROGRESS.md](PROGRESS.md)。
