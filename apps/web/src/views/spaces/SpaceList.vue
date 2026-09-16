@@ -192,9 +192,9 @@ function visibilityLabel(value: string) {
 }
 
 function visibilityClass(value: string) {
-  if (value === 'public') return 'text-[var(--kh-cyan)] bg-[rgba(94,234,212,0.08)] border-[rgba(94,234,212,0.22)]'
-  if (value === 'private') return 'text-rose-300 bg-rose-950/40 border-rose-500/30'
-  return 'text-[var(--kh-primary)] bg-[var(--kh-primary-soft)] border-[var(--kh-border)]'
+  if (value === 'public') return 'text-[var(--kh-primary)] bg-[var(--kh-primary-soft)] border-[var(--kh-border)]'
+  if (value === 'private') return 'text-rose-700 bg-rose-50 border-rose-200'
+  return 'text-[var(--kh-text-soft)] bg-[var(--kh-fill)] border-[var(--kh-border)]'
 }
 
 onMounted(() => {

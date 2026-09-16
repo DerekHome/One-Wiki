@@ -3,32 +3,41 @@
 @tailwind utilities;
 
 @layer base {
+  /* Radix Colors Sage + Teal: https://www.radix-ui.com/colors */
   :root {
     --font-sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Sans SC", sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-    --kh-bg: #f5f7fa;
-    --kh-bg-deep: #eef2f7;
-    --kh-surface: #ffffff;
+    --kh-bg: #f7f9f8;
+    --kh-bg-deep: #eef1f0;
+    --kh-surface: #fbfdfc;
     --kh-surface-solid: #ffffff;
-    --kh-surface-soft: #f9fafb;
-    --kh-fill: #f3f4f6;
-    --kh-border: #e4e7ec;
-    --kh-border-strong: #d0d5dd;
-    --kh-text: #18181b;
-    --kh-text-soft: #344054;
-    --kh-text-muted: #667085;
-    --kh-text-dim: #98a2b3;
-    --kh-primary: #2563eb;
-    --kh-primary-strong: #1d4ed8;
-    --kh-primary-soft: #eff6ff;
-    --kh-cyan: #0891b2;
-    --kh-glow: rgba(37, 99, 235, 0.12);
-    --kh-ink: #111827;
-    --kh-shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04);
-    --kh-shadow-md: 0 12px 32px rgba(16, 24, 40, 0.08);
+    --kh-surface-soft: #f7f9f8;
+    --kh-fill: #eef1f0;
+    --kh-border: #d7dad9;
+    --kh-border-strong: #b8bcba;
+    --kh-text: #1a211e;
+    --kh-text-soft: #3f4744;
+    --kh-text-muted: #5f6563;
+    --kh-text-dim: #868e8b;
+    --kh-primary: #008573;
+    --kh-primary-strong: #0d3d38;
+    --kh-primary-soft: #e0f8f3;
+    --kh-cyan: #0d9b8a;
+    --kh-glow: color-mix(in srgb, #12a594 16%, transparent);
+    --kh-ink: #1a211e;
+    --kh-shadow-sm: 0 1px 2px color-mix(in srgb, #1a211e 5%, transparent);
+    --kh-shadow-md: 0 12px 32px color-mix(in srgb, #1a211e 8%, transparent);
     --kh-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
     --kh-ease: cubic-bezier(0.2, 0, 0, 1);
+
+    --el-color-primary: var(--kh-primary);
+    --el-color-primary-light-3: #53b9ab;
+    --el-color-primary-light-5: #83cdc1;
+    --el-color-primary-light-7: #b8eae0;
+    --el-color-primary-light-8: #ccf3ea;
+    --el-color-primary-light-9: #e0f8f3;
+    --el-color-primary-dark-2: #0d9b8a;
   }
 
   html,
@@ -46,8 +55,8 @@
   }
 
   ::selection {
-    background: rgba(37, 99, 235, 0.16);
-    color: #111827;
+    background: color-mix(in srgb, var(--kh-primary) 18%, transparent);
+    color: var(--kh-text);
   }
 
   button,
@@ -64,11 +73,11 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: #d4d4d8;
+    background: var(--kh-border-strong);
     border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #a1a1aa;
+    background: var(--kh-text-dim);
   }
 }
 
@@ -82,9 +91,9 @@
   gap: 0.4rem;
   padding: 0.2rem 0.65rem;
   border-radius: 999px;
-  border: 1px solid #dbeafe;
-  background: #eff6ff;
-  color: #1d4ed8;
+  border: 1px solid color-mix(in srgb, var(--kh-primary) 22%, var(--kh-border));
+  background: var(--kh-primary-soft);
+  color: var(--kh-primary);
   font-size: 11px;
   font-weight: 600;
 }
@@ -95,7 +104,7 @@
   justify-content: center;
   border-radius: 0.55rem;
   border: 1px solid var(--kh-border);
-  background: #ffffff;
+  background: var(--kh-surface-solid);
   color: var(--kh-primary);
 }
 
@@ -116,7 +125,7 @@
 .notion-prose {
   font-size: 15px;
   line-height: 1.82;
-  color: #27272a;
+  color: var(--kh-text);
 }
 .notion-prose h1 {
   font-size: 1.875rem;
@@ -124,7 +133,7 @@
   letter-spacing: -0.025em;
   margin-top: 2rem;
   margin-bottom: 0.75rem;
-  color: #09090b;
+  color: var(--kh-ink);
 }
 .notion-prose h2 {
   font-size: 1.4rem;
@@ -132,8 +141,8 @@
   letter-spacing: -0.02em;
   margin-top: 1.75rem;
   margin-bottom: 0.5rem;
-  color: #18181b;
-  border-bottom: 1px solid #f4f4f5;
+  color: var(--kh-text);
+  border-bottom: 1px solid var(--kh-fill);
   padding-bottom: 0.35rem;
 }
 .notion-prose h3 {
@@ -141,7 +150,7 @@
   font-weight: 600;
   margin-top: 1.25rem;
   margin-bottom: 0.35rem;
-  color: #27272a;
+  color: var(--kh-text);
 }
 .notion-prose p {
   margin-top: 0.65rem;
@@ -161,15 +170,15 @@
   border-left: 3px solid var(--kh-primary);
   padding-left: 1rem;
   margin: 1rem 0;
-  color: #475467;
-  background: #f8fafc;
+  color: var(--kh-text-muted);
+  background: var(--kh-fill);
   padding-top: 0.25rem;
   padding-bottom: 0.25rem;
   border-radius: 0 0.375rem 0.375rem 0;
 }
 .notion-prose pre {
-  background-color: #18181b;
-  color: #f4f4f5;
+  background-color: var(--kh-ink);
+  color: var(--kh-bg);
   padding: 1rem;
   border-radius: 0.5rem;
   overflow-x: auto;
@@ -178,8 +187,8 @@
   margin: 1rem 0;
 }
 .notion-prose code:not(pre code) {
-  background-color: #eef4ff;
-  color: #1d4ed8;
+  background-color: var(--kh-primary-soft);
+  color: var(--kh-primary-strong);
   padding: 0.2rem 0.4rem;
   border-radius: 0.25rem;
   font-size: 0.85em;
@@ -187,7 +196,7 @@
 }
 .notion-prose hr {
   border: 0;
-  border-top: 1px solid #e4e4e7;
+  border-top: 1px solid var(--kh-border);
   margin: 2rem 0;
 }
 .notion-prose table {
@@ -197,15 +206,15 @@
   font-size: 0.9rem;
 }
 .notion-prose th {
-  background: #f4f4f5;
+  background: var(--kh-fill);
   font-weight: 600;
   text-align: left;
   padding: 0.6rem 0.8rem;
-  border: 1px solid #e4e4e7;
+  border: 1px solid var(--kh-border);
 }
 .notion-prose td {
   padding: 0.6rem 0.8rem;
-  border: 1px solid #e4e4e7;
+  border: 1px solid var(--kh-border);
 }
 
 .linear-card {
@@ -235,15 +244,15 @@
   padding: 2px 7px;
   border-radius: 4px;
   border: 1px solid var(--kh-border);
-  background: #fafafa;
-  color: #52525b;
+  background: var(--kh-surface-soft);
+  color: var(--kh-text-muted);
 }
 
 .app-page {
   min-height: 100%;
   background:
-    radial-gradient(circle at 12% 0%, rgba(37, 99, 235, 0.04), transparent 22rem),
-    linear-gradient(180deg, #ffffff 0%, var(--kh-bg) 100%);
+    radial-gradient(circle at 12% 0%, var(--kh-glow), transparent 22rem),
+    linear-gradient(180deg, var(--kh-surface-solid) 0%, var(--kh-bg) 100%);
 }
 
 .app-button {
@@ -268,35 +277,35 @@
 }
 
 .app-button-primary {
-  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
-  border: 1px solid rgba(29, 78, 216, 0.9);
+  background: linear-gradient(180deg, #12a594 0%, #008573 100%);
+  border: 1px solid color-mix(in srgb, #0d3d38 35%, #008573);
   color: #ffffff;
-  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.18);
+  box-shadow: 0 8px 18px var(--kh-glow);
 }
 
 .app-button-primary:hover {
-  background: linear-gradient(180deg, #1d4ed8 0%, #1e40af 100%);
-  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.22);
+  background: linear-gradient(180deg, #0d9b8a 0%, #0d3d38 100%);
+  box-shadow: 0 10px 24px var(--kh-glow);
 }
 
 .app-button-dark {
-  background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
-  border: 1px solid #111827;
+  background: linear-gradient(180deg, #3f4744 0%, #1a211e 100%);
+  border: 1px solid var(--kh-ink);
   color: #ffffff;
   box-shadow: var(--kh-shadow-sm);
 }
 
 .app-button-ghost {
-  background: #ffffff;
+  background: var(--kh-surface-solid);
   border: 1px solid var(--kh-border);
-  color: #344054;
+  color: var(--kh-text-soft);
   box-shadow: var(--kh-shadow-sm);
 }
 
 .app-button-ghost:hover {
-  background: #f9fafb;
+  background: var(--kh-surface-soft);
   border-color: var(--kh-border-strong);
-  color: #111827;
+  color: var(--kh-text);
 }
 
 .brand-mark {
@@ -307,9 +316,9 @@
   overflow: hidden;
   background:
     radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.34), transparent 1.8rem),
-    linear-gradient(135deg, #2563eb 0%, #172554 100%);
+    linear-gradient(135deg, #12a594 0%, #0d3d38 100%);
   color: #ffffff;
-  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.18);
+  box-shadow: 0 8px 18px var(--kh-glow);
 }
 
 .brand-mark::after {
@@ -335,7 +344,7 @@
   min-height: 3.5rem;
   padding: 0.85rem 1rem;
   border-bottom: 1px solid var(--kh-border);
-  background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+  background: linear-gradient(180deg, var(--kh-surface-solid) 0%, var(--kh-bg) 100%);
 }
 
 .sidebar-brand--compact {
@@ -379,14 +388,14 @@
 }
 
 .metric-card {
-  background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+  background: linear-gradient(180deg, var(--kh-surface-solid) 0%, var(--kh-bg) 100%);
   border: 1px solid var(--kh-border);
   border-radius: 0.75rem;
   box-shadow: var(--kh-shadow-sm);
 }
 
 .soft-panel {
-  background: rgba(255, 255, 255, 0.84);
+  background: color-mix(in srgb, var(--kh-surface-solid) 84%, transparent);
   border: 1px solid var(--kh-border);
   box-shadow: var(--kh-shadow-sm);
 }
@@ -412,13 +421,13 @@
 .el-select__wrapper.is-focused {
   box-shadow:
     0 0 0 1px var(--kh-primary) inset,
-    0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+    0 0 0 3px var(--kh-glow) !important;
 }
 
 .el-button--primary {
   background-color: var(--kh-primary) !important;
   border-color: var(--kh-primary) !important;
-  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.14);
+  box-shadow: 0 8px 18px var(--kh-glow);
   transition:
     transform 140ms var(--kh-ease-out),
     background-color 160ms var(--kh-ease-out),
@@ -442,8 +451,8 @@
 .el-table {
   --el-table-bg-color: transparent;
   --el-table-tr-bg-color: transparent;
-  --el-table-header-bg-color: #f8fafc;
-  --el-table-row-hover-bg-color: #f9fafb;
+  --el-table-header-bg-color: var(--kh-fill);
+  --el-table-row-hover-bg-color: var(--kh-surface-soft);
   --el-table-border-color: var(--kh-border);
   --el-table-text-color: var(--kh-text-soft);
   --el-table-header-text-color: var(--kh-text-muted);
@@ -451,7 +460,7 @@
 }
 
 .el-table th.el-table__cell {
-  background: #f8fafc !important;
+  background: var(--kh-fill) !important;
 }
 
 .el-tabs__item {
@@ -489,7 +498,7 @@ summary:focus-visible {
 .space-detail .el-table__cell { padding-top: 14px; padding-bottom: 14px; }
 .settings-tabs .el-tabs__header { margin-bottom: 24px; }
 .settings-tabs .el-tabs__item { height: 48px; font-weight: 500; }
-.settings-page .el-table th.el-table__cell { background: #f8fafc; color: #475569; }
+.settings-page .el-table th.el-table__cell { background: var(--kh-fill); color: var(--kh-text-muted); }
 .settings-page .el-table { border-radius: 10px; }
 .settings-page .el-radio-group { display: flex; flex-wrap: wrap; gap: 8px; }
 .settings-page .el-radio { height: auto; white-space: normal; margin-right: 0; }

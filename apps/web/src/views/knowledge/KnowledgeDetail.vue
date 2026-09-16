@@ -100,7 +100,7 @@
         <div class="mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-xs text-[var(--kh-text-muted)]">
           <div>引用 URI: <span class="font-mono text-[var(--kh-text-soft)]">knowledge://{{ knowledge?.id }}</span></div>
           <div class="flex items-center gap-3">
-            <button @click="goToEdit" class="text-[var(--kh-primary)] hover:text-[#8cc5ff] font-semibold transition-colors">编辑此文档</button>
+            <button @click="goToEdit" class="text-[var(--kh-primary)] hover:text-[var(--kh-primary-strong)] font-semibold transition-colors">编辑此文档</button>
             <button @click="handleDelete" class="text-rose-500 hover:text-rose-700 font-medium transition-colors">删除文档</button>
           </div>
         </div>
@@ -160,7 +160,7 @@
           <div class="flex justify-between items-center mb-2">
             <span class="text-[11px] font-semibold text-[var(--kh-text-dim)] uppercase tracking-wider font-mono">关联附件</span>
             <el-upload action="#" :http-request="handleUploadAttachment" :show-file-list="false">
-              <button class="text-[11px] text-[var(--kh-primary)] hover:text-[#8cc5ff] font-medium">+ 上传</button>
+              <button class="text-[11px] text-[var(--kh-primary)] hover:text-[var(--kh-primary-strong)] font-medium">+ 上传</button>
             </el-upload>
           </div>
           <div class="space-y-1.5">
@@ -171,7 +171,7 @@
             >
               <span class="truncate max-w-[140px]" :title="a.filename">{{ a.filename }}</span>
               <div class="flex items-center gap-2">
-                <button @click="downloadAttachment(a.id)" class="text-[var(--kh-primary)] hover:text-[#8cc5ff] text-[11px]">下载</button>
+                <button @click="downloadAttachment(a.id)" class="text-[var(--kh-primary)] hover:text-[var(--kh-primary-strong)] text-[11px]">下载</button>
                 <button @click="deleteAttachment(a.id)" class="text-rose-500 hover:text-rose-700 text-[11px] opacity-0 group-hover:opacity-100 transition-opacity">×</button>
               </div>
             </div>
@@ -407,10 +407,10 @@ onMounted(() => {
   font-family: var(--font-mono);
   font-size: 12px;
   background-color: var(--kh-primary-soft);
-  color: #1d4ed8;
+  color: var(--kh-primary-strong);
   padding: 2px 6px;
   border-radius: 4px;
-  border: 1px solid #dbeafe;
+  border: 1px solid color-mix(in srgb, var(--kh-primary) 18%, var(--kh-border));
 }
 
 :deep(.notion-prose pre) {

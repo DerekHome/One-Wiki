@@ -1,7 +1,7 @@
 <template>
   <div class="kh-shell min-h-screen grid lg:grid-cols-[1fr_460px] bg-[var(--kh-bg)]">
     <section class="hidden lg:flex flex-col justify-between px-12 py-10 relative overflow-hidden">
-      <div class="absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(37,99,235,0.08),transparent_26rem)]"></div>
+      <div class="absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,var(--kh-glow),transparent_26rem)]"></div>
 
       <div class="relative flex items-center gap-3">
         <div class="brand-mark w-9 h-9 rounded-xl text-xs tracking-wider">

@@ -81,7 +81,7 @@
         <button
           v-if="selectedTopicId !== null"
           @click="handleDeleteCurrentTopic"
-          class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs text-[var(--kh-text-dim)] hover:text-rose-300 hover:bg-rose-950/40 rounded-md transition cursor-pointer"
+          class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs text-[var(--kh-text-dim)] hover:text-rose-700 hover:bg-rose-50 rounded-md transition cursor-pointer"
           title="删除当前专题"
         >
           <span>删除专题</span>
@@ -144,7 +144,7 @@
         </el-table-column>
         <el-table-column label="操作" width="120" align="right">
           <template #default="{ row }">
-            <button class="text-xs font-medium text-[var(--kh-primary)] hover:text-[#8cc5ff] mr-3 cursor-pointer" @click="goToEdit(row.id)">编辑</button>
+            <button class="text-xs font-medium text-[var(--kh-primary)] hover:text-[var(--kh-primary-strong)] mr-3 cursor-pointer" @click="goToEdit(row.id)">编辑</button>
             <button class="text-xs font-medium text-red-500 hover:text-red-700 cursor-pointer" @click="deleteKnowledge(row.id)">删除</button>
           </template>
         </el-table-column>
