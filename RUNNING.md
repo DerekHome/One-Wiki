@@ -29,6 +29,8 @@ npm run dev
 
 开发环境默认通过 Vite 代理访问 `http://localhost:8000`。部署时使用 `VITE_API_BASE_URL` 配置 API 前缀；不要在业务代码中写死后端地址。
 
+Windows 本地可用根目录 `start.bat`：先启动 Docker MySQL，再拉起前后端。`stop.bat` 关闭进程并停止数据库容器。
+
 ## 测试
 
 后端测试会自动使用隔离的 SQLite 内存数据库和临时附件目录，不会修改业务 MySQL 数据：

@@ -1,6 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
+from app.models.entities import ModuleConfig
 
 client = TestClient(app)
 
@@ -9,7 +10,7 @@ def test_health_check():
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
 
-def test_full_business_flow():
+def test_full_business_flow(db_session):
     # 1. 注册并登录管理员
     reg_admin = client.post("/api/v1/auth/register", json={"username": "public_registration", "password": "password123", "role": "admin"})
     assert reg_admin.status_code == 422
@@ -95,6 +96,8 @@ def test_full_business_flow():
     assert disable_mod.status_code == 200
     search_disabled = client.get("/api/v1/search/?q=微内核", headers=headers_b)
     assert len(search_disabled.json()["data"]["items"]) == 0
+    persisted = db_session.query(ModuleConfig).filter(ModuleConfig.module_id == "search").one()
+    assert persisted.status == "disabled"
 
     # 确认知识 CRUD 依然完好
     k_still_works = client.get(f"/api/v1/knowledge/{k_id}", headers=headers_b)
@@ -102,6 +105,9 @@ def test_full_business_flow():
 
     # 重新启用搜索模块
     client.post("/api/v1/modules/search/enable", headers=admin_headers)
+    db_session.expire_all()
+    restored_row = db_session.query(ModuleConfig).filter(ModuleConfig.module_id == "search").one()
+    assert restored_row.status == "enabled"
     search_restored = client.get("/api/v1/search/?q=微内核", headers=headers_b)
     assert len(search_restored.json()["data"]["items"]) >= 1
 

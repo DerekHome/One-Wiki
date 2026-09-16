@@ -188,3 +188,24 @@ def test_mcp_prefers_api_key_identity(db_session):
     user = AgentKnowledgeService.resolve_mcp_principal(db_session, username="ignored", api_key=created["api_key"])
     assert user.actor_type == "agent"
     assert user.agent_key_name == "mcp-bot"
+
+
+def test_non_admin_can_issue_agent_key():
+    client.post("/api/v1/auth/register", json={"username": "key_editor", "password": "password123"})
+    login = client.post("/api/v1/auth/login", json={"username": "key_editor", "password": "password123"})
+    assert login.status_code == 200
+    headers = {"Authorization": f"Bearer {login.json()['data']['access_token']}"}
+
+    created = client.post("/api/v1/agent-keys/", json={"name": "my-bot"}, headers=headers)
+    assert created.status_code == 200
+    assert created.json()["data"]["api_key"].startswith("kck_")
+
+    listed = client.get("/api/v1/agent-keys/", headers=headers)
+    assert listed.status_code == 200
+    assert any(item["name"] == "my-bot" for item in listed.json()["data"])
+
+
+def test_mcp_fastmcp_server_loads():
+    from app.mcp_server import mcp
+
+    assert mcp.name == "KnowledgeCenterMCP"

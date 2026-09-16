@@ -107,14 +107,13 @@
           </button>
 
           <button
-            v-if="auth.isAdmin"
             @click="$router.push('/settings')"
             class="app-button px-3 py-1.5 rounded-lg border cursor-pointer"
             :class="$route.path.startsWith('/settings') ? 'bg-[var(--kh-primary-soft)] text-[var(--kh-primary)] border-[var(--kh-border-strong)] font-semibold' : 'app-button-ghost'"
-            title="系统配置中心"
+            :title="auth.isAdmin ? '系统配置中心' : '签发 Agent 凭证'"
           >
             <el-icon :size="14"><Operation /></el-icon>
-            <span>配置中心</span>
+            <span>{{ auth.isAdmin ? '配置中心' : 'Agent 凭证' }}</span>
           </button>
         </div>
       </header>
@@ -160,7 +159,7 @@ const currentRouteTitle = computed(() => {
     Search: '全文检索',
     Audit: '安全审计',
     UserManagement: '用户管理',
-    SettingsHub: '系统配置中心'
+    SettingsHub: auth.isAdmin ? '系统配置中心' : 'Agent 凭证'
   }
   return map[name] || '控制台'
 })

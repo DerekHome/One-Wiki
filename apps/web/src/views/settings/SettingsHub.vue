@@ -2,13 +2,15 @@
   <div class="app-page settings-page max-w-6xl mx-auto px-4 py-6 lg:px-8 pb-16">
     <div class="mb-8">
       <p class="kh-kicker mb-2">管理与设置</p>
-      <h1 class="kh-title text-3xl">系统配置中心</h1>
-      <p class="text-sm text-[var(--kh-text-muted)] mt-2">查看知识库概况，管理成员、存储与系统偏好。</p>
+      <h1 class="kh-title text-3xl">{{ auth.isAdmin ? '系统配置中心' : 'Agent 凭证' }}</h1>
+      <p class="text-sm text-[var(--kh-text-muted)] mt-2">
+        {{ auth.isAdmin ? '查看知识库概况，管理成员、存储与系统偏好。' : '为智能体签发只读 API Key，让 AI 在权限范围内取用已发布知识。' }}
+      </p>
     </div>
 
     <el-tabs v-model="activeTab" class="settings-tabs metric-card p-4 lg:p-6">
       <!-- 1. 数据统计大盘 -->
-      <el-tab-pane label="数据大盘" name="stats">
+      <el-tab-pane v-if="auth.isAdmin" label="数据大盘" name="stats">
         <div v-loading="loadingStats">
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <div class="linear-card p-4 border border-[var(--kh-border)]">
@@ -110,7 +112,7 @@
       </el-tab-pane>
 
       <!-- 2. 存储与文件配置 -->
-      <el-tab-pane label="存储配置" name="storage">
+      <el-tab-pane v-if="auth.isAdmin" label="存储配置" name="storage">
         <div class="max-w-2xl py-4" v-loading="loadingSettings">
           <el-form :model="settingsForm" label-position="top">
             <el-form-item label="存储驱动模式">
@@ -149,7 +151,7 @@
       </el-tab-pane>
 
       <!-- 3. 用户管理 -->
-      <el-tab-pane label="用户管理" name="users">
+      <el-tab-pane v-if="auth.isAdmin" label="用户管理" name="users">
         <div class="flex flex-wrap gap-3 justify-between items-center mb-4">
           <span class="text-xs text-[var(--kh-text-muted)]">统一管控系统注册账户、账号可用状态与系统分配角色</span>
           <el-button size="small" type="primary" @click="openCreateUserDialog">添加用户</el-button>
@@ -185,7 +187,7 @@
       </el-tab-pane>
 
       <!-- 4. 角色与权限矩阵 (RBAC) -->
-      <el-tab-pane label="权限与角色" name="roles">
+      <el-tab-pane v-if="auth.isAdmin" label="权限与角色" name="roles">
         <div class="mb-4 text-xs text-[var(--kh-text-muted)]">系统内置的标准四级角色权限定义矩阵 (RBAC + Resource ACL)</div>
         <el-table :data="rolesMatrix" class="w-full" border>
           <el-table-column prop="role" label="角色标识" width="120" />
@@ -202,7 +204,7 @@
       </el-tab-pane>
 
       <!-- 5. 安全操作审计 -->
-      <el-tab-pane label="操作日志" name="audit">
+      <el-tab-pane v-if="auth.isAdmin" label="操作日志" name="audit">
         <div class="flex flex-wrap gap-3 mb-4">
           <el-input v-model="auditActionFilter" placeholder="操作动作 (如 register / create_knowledge)..." clearable size="small" class="w-64" />
           <el-button size="small" type="primary" @click="fetchAuditLogs">检索日志</el-button>
@@ -228,7 +230,7 @@
       </el-tab-pane>
 
       <!-- 6. 系统偏好设置 -->
-      <el-tab-pane label="系统偏好" name="preferences">
+      <el-tab-pane v-if="auth.isAdmin" label="系统偏好" name="preferences">
         <div class="max-w-xl py-4" v-loading="loadingSettings">
           <el-form :model="settingsForm" label-position="top">
             <el-form-item label="系统站点标题">
@@ -272,6 +274,8 @@
         <el-button @click="createUserDialog = false">取消</el-button>
         <el-button type="primary" @click="submitCreateUser">确定添加</el-button>
       </template>
+    </el-dialog>
+
     <el-dialog v-model="createKeyDialog" title="签发 Agent API Key" width="min(440px, calc(100vw - 32px))">
       <el-form :model="keyForm" label-position="top">
         <el-form-item label="名称" required>
@@ -295,8 +299,10 @@
 import { ref, onMounted } from 'vue'
 import { apiClient } from '../../api/client'
 import { ElMessage } from 'element-plus'
+import { useAuthStore } from '../../stores/auth'
 
-const activeTab = ref('stats')
+const auth = useAuthStore()
+const activeTab = ref(auth.isAdmin ? 'stats' : 'agent-keys')
 
 // 1. 数据统计
 const stats = ref<any>(null)
@@ -435,12 +441,13 @@ function formatDate(val: string) {
 }
 
 onMounted(() => {
+  fetchAgentKeys()
+  fetchKeySpaces()
+  if (!auth.isAdmin) return
   fetchStats()
   fetchSettings()
   fetchUsers()
   fetchRoles()
   fetchAuditLogs()
-  fetchAgentKeys()
-  fetchKeySpaces()
 })
 </script>

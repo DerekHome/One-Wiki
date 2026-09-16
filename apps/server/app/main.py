@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -6,15 +8,28 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 from app.api import api_router
 from app.schemas.common import ResponseModel
-from app.models.database import get_db
+from app.models.database import SessionLocal, get_db
 from app.core.config import settings
+from app.core.modules.registry import module_registry
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    db = SessionLocal()
+    try:
+        module_registry.load_from_db(db)
+    finally:
+        db.close()
+    yield
+
 
 app = FastAPI(
     title="企业知识中心系统 (Enterprise Knowledge Center API)",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
-    redirect_slashes=False
+    redirect_slashes=False,
+    lifespan=lifespan,
 )
 
 @app.get("/", include_in_schema=False)

@@ -1,5 +1,10 @@
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List
+
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
+
+from app.models.entities import ModuleConfig
+
 
 class ModuleManifest(BaseModel):
     id: str
@@ -8,6 +13,7 @@ class ModuleManifest(BaseModel):
     description: str = ""
     extension_point: str  # source_connector, parser, processor, search_provider, output_integration
     config_schema: Dict[str, Any] = {}
+
 
 class BaseModule:
     def __init__(self, manifest: ModuleManifest):
@@ -26,6 +32,7 @@ class BaseModule:
 
     def health_check(self) -> bool:
         return True
+
 
 class ModuleRegistry:
     def __init__(self):
@@ -86,5 +93,48 @@ class ModuleRegistry:
     def update_config(self, module_id: str, new_config: Dict[str, Any]):
         if module_id in self._modules:
             self._modules[module_id].config.update(new_config)
+
+    def persist_to_db(self, db: Session, module_id: str) -> None:
+        mod = self._modules.get(module_id)
+        if not mod:
+            return
+        status = "enabled" if mod.enabled else "disabled"
+        row = db.query(ModuleConfig).filter(ModuleConfig.module_id == module_id).first()
+        if row is None:
+            db.add(ModuleConfig(
+                module_id=module_id,
+                name=mod.manifest.name,
+                version=mod.manifest.version,
+                status=status,
+                config=mod.config or {},
+            ))
+        else:
+            row.name = mod.manifest.name
+            row.version = mod.manifest.version
+            row.status = status
+            row.config = mod.config or {}
+        db.commit()
+
+    def load_from_db(self, db: Session) -> None:
+        try:
+            rows = {row.module_id: row for row in db.query(ModuleConfig).all()}
+        except Exception:
+            db.rollback()
+            return
+
+        if not rows:
+            for module_id in list(self._modules):
+                self.persist_to_db(db, module_id)
+            return
+
+        for module_id, mod in self._modules.items():
+            row = rows.get(module_id)
+            if row is None:
+                self.persist_to_db(db, module_id)
+                continue
+            mod.enabled = row.status != "disabled"
+            if row.config:
+                mod.config = row.config
+
 
 module_registry = ModuleRegistry()

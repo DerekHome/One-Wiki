@@ -13,3 +13,4 @@ httpx
 passlib[bcrypt]
 python-jose[cryptography]
 python-multipart
+mcp>=1.2

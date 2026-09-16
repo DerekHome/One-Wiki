@@ -113,7 +113,7 @@ npm run dev
 
 ### Windows 一键启动（可选）
 
-根目录 `start.bat` 会分别打开后端（8000）与前端（3000）窗口并打开浏览器。首次使用前请已完成数据库迁移与 `init_admin.py`。
+根目录 `start.bat` 会先 `docker compose up -d db` 拉起 MySQL，再打开后端（8000）与前端（3000）窗口并打开浏览器。`stop.bat` 关闭前后端进程并 `docker compose stop db`（数据卷保留）。首次使用前请已完成数据库迁移与 `init_admin.py`。
 
 ## 测试与构建
 
@@ -162,7 +162,8 @@ One-Wiki/                    # 本仓库（Knowledge Center Monorepo）
 ├─ packages/                 # 共享包预留
 ├─ docker-compose.yml
 ├─ .env.example
-├─ start.bat                 # Windows 本地双端启动（可选）
+├─ start.bat                 # Windows：启动 MySQL + 前后端
+├─ stop.bat                  # Windows：停止前后端与 MySQL 容器
 ├─ RUNNING.md                # 运行补充说明
 └─ CLAUDE.md                 # 仓库开发约束
 ```
@@ -184,7 +185,7 @@ One-Wiki/                    # 本仓库（Knowledge Center Monorepo）
 
 ## Agent 接入
 
-智能体不要借用员工登录密码。在 **系统配置 → Agent 凭证** 签发 Key：
+智能体不要借用员工登录密码。任意登录用户可在 **设置 → Agent 凭证** 签发 Key（管理员仍可看到全部配置页）：
 
 ```http
 Authorization: Bearer kck_...
@@ -196,6 +197,13 @@ GET /api/v1/agent/knowledge/{id}/latest
 - 可绑定单个空间；不绑定则沿用签发人可见范围。
 - 只返回 **已发布** 最新版本，载荷含 `citation_uri`（如 `knowledge://12`）、专题、标签。
 - MCP 设置 `MCP_API_KEY`，或退而使用 `MCP_AUTH_USER`；两者都缺则拒绝启动式回落到管理员。
+
+在 `apps/server` 安装依赖后启动 MCP（stdio）：
+
+```powershell
+$env:MCP_API_KEY = "kck_..."
+python -m app.mcp_server
+```
 
 ## 常见问题
 
