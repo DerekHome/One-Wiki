@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.permissions import can_access_knowledge
+from app.core.permissions import can_access_knowledge, check_space_permission, require_agent_permission
 from app.models.entities import Knowledge, KnowledgeTag, KnowledgeVersion, User
 from app.services.agent_key_service import KEY_PREFIX, AgentKeyService
 from app.services.attachment_service import AttachmentService
@@ -137,17 +137,20 @@ class AgentKnowledgeService:
 
     @staticmethod
     def get_knowledge(db: Session, knowledge_id: int, user: User) -> Dict[str, Any]:
+        require_agent_permission(user, "read")
         knowledge = AgentKnowledgeService.require_readable(db, knowledge_id, user)
         return AgentKnowledgeService.serialize(db, knowledge, include_content=True)
 
     @staticmethod
     def get_latest_knowledge(db: Session, knowledge_id: int, user: User) -> Dict[str, Any]:
+        require_agent_permission(user, "read")
         knowledge = AgentKnowledgeService.require_readable(db, knowledge_id, user)
         version = AgentKnowledgeService.get_current_version(db, knowledge)
         return AgentKnowledgeService.serialize(db, knowledge, include_content=True, version=version)
 
     @staticmethod
     def list_versions(db: Session, knowledge_id: int, user: User) -> List[Dict[str, Any]]:
+        require_agent_permission(user, "versions")
         knowledge = AgentKnowledgeService.require_readable(db, knowledge_id, user)
         versions = KnowledgeService.list_versions(db, knowledge.id)
         return [
@@ -163,6 +166,7 @@ class AgentKnowledgeService:
 
     @staticmethod
     def list_spaces(db: Session, user: User) -> List[Dict[str, Any]]:
+        require_agent_permission(user, "list_spaces")
         spaces = SpaceService.list_spaces_for_user(db, user)
         return [
             {"id": space.id, "name": space.name, "description": space.description, "visibility": space.visibility}
@@ -171,6 +175,7 @@ class AgentKnowledgeService:
 
     @staticmethod
     def list_related(db: Session, knowledge_id: int, user: User, limit: int = 5) -> List[Dict[str, Any]]:
+        require_agent_permission(user, "related")
         knowledge = AgentKnowledgeService.require_readable(db, knowledge_id, user)
         candidates = (
             db.query(Knowledge)
@@ -220,12 +225,8 @@ class AgentKnowledgeService:
 
     @staticmethod
     def list_published_in_space(db: Session, space_id: int, user: User) -> List[Knowledge]:
-        spaces = AgentKnowledgeService.list_spaces(db, user)
-        if not any(space["id"] == space_id for space in spaces):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail={"code": "PERMISSION_DENIED", "message": "无权访问该知识空间"},
-            )
+        require_agent_permission(user, "read")
+        check_space_permission(db, space_id, user, "viewer")
         docs = (
             db.query(Knowledge)
             .filter(Knowledge.space_id == space_id, Knowledge.is_deleted == False, Knowledge.status == "published")
@@ -236,12 +237,8 @@ class AgentKnowledgeService:
 
     @staticmethod
     def list_topics(db: Session, space_id: int, user: User) -> List[Dict[str, Any]]:
-        spaces = AgentKnowledgeService.list_spaces(db, user)
-        if not any(space["id"] == space_id for space in spaces):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail={"code": "PERMISSION_DENIED", "message": "无权访问该知识空间"},
-            )
+        require_agent_permission(user, "list_spaces")
+        check_space_permission(db, space_id, user, "viewer")
         topics = TopicService.list_topics_by_space(db, space_id)
         return [
             {
@@ -256,6 +253,7 @@ class AgentKnowledgeService:
 
     @staticmethod
     def list_attachments(db: Session, knowledge_id: int, user: User) -> List[Dict[str, Any]]:
+        require_agent_permission(user, "attachments")
         knowledge = AgentKnowledgeService.require_readable(db, knowledge_id, user)
         attachments = AttachmentService.list_attachments(db, knowledge.id)
         return [
@@ -283,6 +281,7 @@ class AgentKnowledgeService:
     ) -> List[Dict[str, Any]]:
         from app.core.modules.registry import module_registry
 
+        require_agent_permission(user, "search")
         if not module_registry.is_enabled("search"):
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

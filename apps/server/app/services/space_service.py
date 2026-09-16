@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from app.models.entities import Space, SpaceMember, User
 from app.schemas.space import SpaceCreate, SpaceUpdate, SpaceMemberAdd
+from app.core.permissions import resolve_agent_space_ids
 from typing import List, Optional
 
 class SpaceService:
@@ -35,10 +36,11 @@ class SpaceService:
                 Space.is_deleted == False,
                 (Space.visibility.in_(["public", "internal"])) | (Space.id.in_(my_space_ids))
             ).all()
-        limit = getattr(user, "agent_space_id", None)
+        limit = resolve_agent_space_ids(user)
         if limit is None:
             return spaces
-        return [space for space in spaces if space.id == limit]
+        allowed = set(limit)
+        return [space for space in spaces if space.id in allowed]
 
     @staticmethod
     def get_space(db: Session, space_id: int) -> Space:

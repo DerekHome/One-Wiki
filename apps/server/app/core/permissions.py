@@ -1,6 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from app.models.entities import User, Space, SpaceMember, Knowledge
+from typing import List, Optional, Set
 
 ROLE_LEVELS = {
     "owner": 40,
@@ -21,11 +22,32 @@ def check_admin(user: User):
             detail={"code": "PERMISSION_DENIED", "message": "需要管理员权限"}
         )
 
-def agent_space_allowed(user: User, space_id: int) -> bool:
+def resolve_agent_space_ids(user: User) -> Optional[List[int]]:
+    ids = getattr(user, "agent_space_ids", None)
+    if ids:
+        return list(ids)
     limit = getattr(user, "agent_space_id", None)
-    if limit is None:
+    if limit is not None:
+        return [limit]
+    return None
+
+def agent_space_allowed(user: User, space_id: int) -> bool:
+    limits = resolve_agent_space_ids(user)
+    if limits is None:
         return True
-    return space_id == limit
+    return space_id in limits
+
+def require_agent_permission(user: User, permission: str) -> None:
+    if getattr(user, "actor_type", None) != "agent":
+        return
+    granted: Optional[Set[str]] = getattr(user, "agent_permissions", None)
+    if granted is None:
+        return
+    if permission not in granted:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"code": "AGENT_PERMISSION_DENIED", "message": f"该 Agent 未授权「{permission}」能力"},
+        )
 
 def get_space_role(db: Session, space_id: int, user: User) -> str:
     if not agent_space_allowed(user, space_id):

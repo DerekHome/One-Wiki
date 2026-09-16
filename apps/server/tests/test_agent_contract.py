@@ -209,3 +209,62 @@ def test_mcp_fastmcp_server_loads():
     from app.mcp_server import mcp
 
     assert mcp.name == "KnowledgeCenterMCP"
+
+
+def test_agent_key_profile_permissions_and_multi_space():
+    module_registry.enable("search")
+    admin = auth_headers("admin_test", "password123")
+    space_a, knowledge_a = _seed_published(admin, title="perm-a", content="alpha body")
+    space_b, knowledge_b = _seed_published(admin, title="perm-b", content="beta body")
+    space_c, knowledge_c = _seed_published(admin, title="perm-c", content="gamma body")
+
+    created = client.post("/api/v1/agent-keys/", json={
+        "name": "scoped-bot",
+        "description": "客服只读助手",
+        "space_ids": [space_a, space_b],
+        "permissions": ["read", "list_spaces"],
+    }, headers=admin)
+    assert created.status_code == 200
+    data = created.json()["data"]
+    assert data["description"] == "客服只读助手"
+    assert set(data["space_ids"]) == {space_a, space_b}
+    assert "search" not in data["permissions"]
+    agent = {"Authorization": f"Bearer {data['api_key']}"}
+
+    assert client.get(f"/api/v1/agent/knowledge/{knowledge_a}/latest", headers=agent).status_code == 200
+    assert client.get(f"/api/v1/agent/knowledge/{knowledge_b}/latest", headers=agent).status_code == 200
+    assert client.get(f"/api/v1/agent/knowledge/{knowledge_c}/latest", headers=agent).status_code == 403
+
+    search_denied = client.get("/api/v1/agent/search?q=alpha", headers=agent)
+    assert search_denied.status_code == 403
+    assert search_denied.json()["error"]["code"] == "AGENT_PERMISSION_DENIED"
+
+    updated = client.put(f"/api/v1/agent-keys/{data['id']}", json={
+        "description": "缩小范围后开放检索",
+        "space_ids": [space_a],
+        "permissions": ["read", "search", "list_spaces"],
+    }, headers=admin)
+    assert updated.status_code == 200
+    assert updated.json()["data"]["description"] == "缩小范围后开放检索"
+    assert updated.json()["data"]["space_ids"] == [space_a]
+
+    search_ok = client.get("/api/v1/agent/search?q=alpha", headers=agent)
+    assert search_ok.status_code == 200
+    assert client.get(f"/api/v1/agent/knowledge/{knowledge_b}/latest", headers=agent).status_code == 403
+
+
+def test_non_admin_can_update_own_agent_profile():
+    client.post("/api/v1/auth/register", json={"username": "profile_editor", "password": "password123"})
+    login = client.post("/api/v1/auth/login", json={"username": "profile_editor", "password": "password123"})
+    headers = {"Authorization": f"Bearer {login.json()['data']['access_token']}"}
+    created = client.post("/api/v1/agent-keys/", json={"name": "desk-bot"}, headers=headers)
+    assert created.status_code == 200
+    key_id = created.json()["data"]["id"]
+
+    updated = client.put(f"/api/v1/agent-keys/{key_id}", json={
+        "description": "内部助手",
+        "permissions": ["read", "search"],
+    }, headers=headers)
+    assert updated.status_code == 200
+    assert updated.json()["data"]["description"] == "内部助手"
+    assert set(updated.json()["data"]["permissions"]) == {"read", "search"}

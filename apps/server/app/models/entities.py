@@ -133,10 +133,13 @@ class AgentApiKey(Base):
     __tablename__ = "agent_api_keys"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(128), nullable=False)
+    description = Column(String(512), nullable=True)
     key_prefix = Column(String(16), nullable=False, index=True)
     hashed_key = Column(String(64), unique=True, nullable=False, index=True)
     owner_user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     space_id = Column(Integer, ForeignKey("spaces.id"), nullable=True, index=True)
+    space_ids = Column(JSON, nullable=True)
+    permissions = Column(JSON, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
     last_used_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

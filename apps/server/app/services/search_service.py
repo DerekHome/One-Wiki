@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_, func
 from app.models.entities import Knowledge, Space, SpaceMember, Tag, KnowledgeTag, User
+from app.core.permissions import resolve_agent_space_ids
 from typing import List, Optional
 
 class SearchService:
@@ -30,9 +31,10 @@ class SearchService:
             ).all()
 
         allowed_space_ids = [s[0] for s in allowed_spaces]
-        limit = getattr(user, "agent_space_id", None)
+        limit = resolve_agent_space_ids(user)
         if limit is not None:
-            allowed_space_ids = [sid for sid in allowed_space_ids if sid == limit]
+            allowed = set(limit)
+            allowed_space_ids = [sid for sid in allowed_space_ids if sid in allowed]
         if not allowed_space_ids:
             return {"items": [], "total": 0, "page": page, "page_size": page_size}
 
