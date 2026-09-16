@@ -27,7 +27,7 @@ def upgrade() -> None:
     sa.Column('resource', sa.String(length=128), nullable=False),
     sa.Column('details', sa.JSON(), nullable=True),
     sa.Column('ip_address', sa.String(length=64), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_audit_logs_action'), 'audit_logs', ['action'], unique=False)
@@ -40,7 +40,7 @@ def upgrade() -> None:
     sa.Column('version', sa.String(length=32), nullable=False),
     sa.Column('status', sa.String(length=32), nullable=False),
     sa.Column('config', sa.JSON(), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('module_id')
     )
@@ -57,7 +57,7 @@ def upgrade() -> None:
     op.create_table('tags',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=64), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_tags_id'), 'tags', ['id'], unique=False)
@@ -68,7 +68,7 @@ def upgrade() -> None:
     sa.Column('hashed_password', sa.String(length=255), nullable=False),
     sa.Column('role', sa.String(length=32), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=True),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
@@ -81,7 +81,7 @@ def upgrade() -> None:
     sa.Column('owner_id', sa.Integer(), nullable=True),
     sa.Column('visibility', sa.String(length=32), nullable=False),
     sa.Column('is_deleted', sa.Boolean(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=True),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
     sa.ForeignKeyConstraint(['owner_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -93,7 +93,7 @@ def upgrade() -> None:
     sa.Column('space_id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('role', sa.String(length=32), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=True),
     sa.ForeignKeyConstraint(['space_id'], ['spaces.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -108,7 +108,7 @@ def upgrade() -> None:
     sa.Column('description', sa.Text(), nullable=True),
     sa.Column('sort_order', sa.Integer(), nullable=False),
     sa.Column('is_deleted', sa.Boolean(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=True),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
     sa.ForeignKeyConstraint(['space_id'], ['spaces.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -133,7 +133,7 @@ def upgrade() -> None:
     sa.Column('visibility', sa.String(length=32), nullable=False),
     sa.Column('is_deleted', sa.Boolean(), nullable=False),
     sa.Column('current_version_id', sa.Integer(), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=True),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('published_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('expired_at', sa.DateTime(timezone=True), nullable=True),
@@ -155,7 +155,7 @@ def upgrade() -> None:
     sa.Column('storage_path', sa.String(length=512), nullable=False),
     sa.Column('checksum', sa.String(length=64), nullable=True),
     sa.Column('created_by', sa.Integer(), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=True),
     sa.ForeignKeyConstraint(['created_by'], ['users.id'], ),
     sa.ForeignKeyConstraint(['knowledge_id'], ['knowledge.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -177,7 +177,7 @@ def upgrade() -> None:
     sa.Column('content', sa.Text(), nullable=False),
     sa.Column('change_summary', sa.String(length=255), nullable=True),
     sa.Column('created_by', sa.Integer(), nullable=True),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=True),
     sa.ForeignKeyConstraint(['created_by'], ['users.id'], ),
     sa.ForeignKeyConstraint(['knowledge_id'], ['knowledge.id'], ),
     sa.PrimaryKeyConstraint('id')

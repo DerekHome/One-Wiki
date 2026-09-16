@@ -4,10 +4,10 @@
     <div class="mb-7">
       <div class="kh-chip mb-3">
         <el-icon :size="13"><SearchIcon /></el-icon>
-        <span>FULL TEXT SEARCH</span>
+        <span>KEYWORD SEARCH</span>
       </div>
-      <h2 class="kh-title text-3xl">企业全文检索</h2>
-      <p class="text-[var(--kh-text-muted)] text-sm mt-2">基于 PostgreSQL 联合检索知识标题、正文与摘要切片。</p>
+      <h2 class="kh-title text-3xl">企业知识检索</h2>
+      <p class="text-[var(--kh-text-muted)] text-sm mt-2">按标题、正文与摘要检索已发布知识，不依赖大模型。</p>
     </div>
 
     <div class="linear-card p-4 lg:p-5 mb-6">

@@ -27,12 +27,11 @@ def upgrade() -> None:
         sa.Column("space_id", sa.Integer(), nullable=True),
         sa.Column("is_active", sa.Boolean(), nullable=False),
         sa.Column("last_used_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("(CURRENT_TIMESTAMP)"), nullable=True),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("CURRENT_TIMESTAMP"), nullable=True),
         sa.Column("revoked_at", sa.DateTime(timezone=True), nullable=True),
         sa.ForeignKeyConstraint(["owner_user_id"], ["users.id"]),
         sa.ForeignKeyConstraint(["space_id"], ["spaces.id"]),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("hashed_key"),
     )
     op.create_index(op.f("ix_agent_api_keys_id"), "agent_api_keys", ["id"], unique=False)
     op.create_index(op.f("ix_agent_api_keys_key_prefix"), "agent_api_keys", ["key_prefix"], unique=False)

@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
-        "postgresql://admin:password@localhost:5432/knowledge_center"
+        "mysql+pymysql://admin:password@localhost:3306/knowledge_center?charset=utf8mb4"
     )
     SECRET_KEY: str = _secret_key_default()
     ALGORITHM: str = "HS256"

@@ -57,7 +57,7 @@
               <div class="space-y-3 text-xs">
                 <div class="flex justify-between py-1 border-b border-[var(--kh-border)]">
                   <span class="text-[var(--kh-text-muted)]">数据库底层</span>
-                  <span class="font-mono text-[var(--kh-text-soft)]">PostgreSQL 16.x (Docker)</span>
+                  <span class="font-mono text-[var(--kh-text-soft)]">MySQL 8 (Docker)</span>
                 </div>
                 <div class="flex justify-between py-1 border-b border-[var(--kh-border)]">
                   <span class="text-[var(--kh-text-muted)]">全文检索机制</span>

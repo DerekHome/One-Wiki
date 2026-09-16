@@ -43,7 +43,7 @@
 | 界面 | 浅色编辑风（Linear 风格）、IBM Plex Sans、CSS 设计令牌（`--kh-*`） |
 | 内容编辑 | TipTap、Marked |
 | 后端 | Python、FastAPI、SQLAlchemy、Alembic、Pydantic |
-| 数据库 | PostgreSQL 15 |
+| 数据库 | MySQL 8（默认，utf8mb4） |
 | 认证 | JWT、`scrypt` 密码哈希（兼容旧格式并自动升级） |
 | 测试 | Pytest、FastAPI TestClient、隔离 SQLite 内存库 |
 
@@ -52,7 +52,7 @@
 - Python 3.11+
 - Node.js 18+
 - npm
-- Docker Desktop（本地 PostgreSQL，可选）
+- Docker Desktop（本地 MySQL，可选）
 
 ## 快速开始
 
@@ -66,7 +66,7 @@ Copy-Item .env.example .env
 
 开发环境可使用模板中的默认数据库连接。**生产环境**必须修改 `DATABASE_URL`、`SECRET_KEY`、`CORS_ORIGINS` 等；`SECRET_KEY` 至少 32 字符，不能使用示例值。
 
-若本机 **5432 端口已被占用**，可修改 `docker-compose.yml` 的端口映射（例如 `5433:5432`），并同步更新 `.env` 中的 `DATABASE_URL` 主机端口。
+若本机 **3306 端口已被占用**，可修改 `docker-compose.yml` 的端口映射（例如 `3307:3306`），并同步更新 `.env` 中的 `DATABASE_URL` 主机端口。
 
 ### 1. 启动数据库
 
@@ -117,7 +117,7 @@ npm run dev
 
 ## 测试与构建
 
-后端测试使用隔离 SQLite 与临时附件目录，**不会**写入业务 PostgreSQL：
+后端测试使用隔离 SQLite 与临时附件目录，**不会**写入业务 MySQL：
 
 ```powershell
 Set-Location apps/server
@@ -171,7 +171,7 @@ One-Wiki/                    # 本仓库（Knowledge Center Monorepo）
 
 | 变量 | 说明 | 示例 |
 | --- | --- | --- |
-| `DATABASE_URL` | PostgreSQL 连接串 | `postgresql://admin:password@localhost:5432/knowledge_center` |
+| `DATABASE_URL` | MySQL 连接串 | `mysql+pymysql://admin:password@localhost:3306/knowledge_center?charset=utf8mb4` |
 | `ENVIRONMENT` | 运行环境 | `development` / `production` |
 | `SECRET_KEY` | JWT 签名密钥 | 生产环境随机长密钥 |
 | `UPLOAD_DIR` | 附件目录 | 见 `apps/server` 配置 |
@@ -224,4 +224,4 @@ GET /api/v1/agent/knowledge/{id}/latest
 
 ## 验证状态
 
-后端回归测试、前端 `npm run build` 与 Alembic 在隔离环境下的升级流程已在开发中验证。真实 PostgreSQL 迁移与完整浏览器回归请在目标环境中执行。
+后端回归测试、前端 `npm run build` 与 Alembic 在隔离环境下的升级流程已在开发中验证。真实 MySQL 迁移与完整浏览器回归请在目标环境中执行。

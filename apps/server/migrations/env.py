@@ -7,12 +7,12 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
 
-from app.models.database import Base
+from app.models.database import Base, normalize_database_url
 from app.models.entities import *
 from app.core.config import settings
 
 config = context.config
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL.replace("%", "%%"))
+config.set_main_option("sqlalchemy.url", normalize_database_url(settings.DATABASE_URL).replace("%", "%%"))
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 

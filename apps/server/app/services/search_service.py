@@ -61,11 +61,12 @@ class SearchService:
             filters.append(Knowledge.id.in_(k_ids_with_tag))
 
         if query_str:
-            q_clean = query_str.strip()
+            q_clean = query_str.strip().lower()
+            pattern = f"%{q_clean}%"
             filters.append(or_(
-                Knowledge.title.ilike(f"%{q_clean}%"),
-                Knowledge.content.ilike(f"%{q_clean}%"),
-                Knowledge.summary.ilike(f"%{q_clean}%")
+                func.lower(Knowledge.title).like(pattern),
+                func.lower(Knowledge.content).like(pattern),
+                func.lower(Knowledge.summary).like(pattern)
             ))
 
         total = db.query(func.count(Knowledge.id)).filter(and_(*filters)).scalar() or 0

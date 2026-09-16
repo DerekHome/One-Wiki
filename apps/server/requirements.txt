@@ -2,6 +2,8 @@ fastapi
 uvicorn
 sqlalchemy
 psycopg2-binary
+pymysql
+cryptography
 alembic
 pydantic
 pydantic-settings

@@ -31,7 +31,7 @@ npm run dev
 
 ## 测试
 
-后端测试会自动使用隔离的 SQLite 内存数据库和临时附件目录，不会修改业务 PostgreSQL 数据：
+后端测试会自动使用隔离的 SQLite 内存数据库和临时附件目录，不会修改业务 MySQL 数据：
 
 ```powershell
 cd apps/server
