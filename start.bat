@@ -9,8 +9,8 @@ echo ========================================================
 echo.
 
 set "ROOT_DIR=%~dp0"
-set "SERVER_DIR=%ROOT_DIR%knowledge-center\apps\server"
-set "WEB_DIR=%ROOT_DIR%knowledge-center\apps\web"
+set "SERVER_DIR=%ROOT_DIR%apps\server"
+set "WEB_DIR=%ROOT_DIR%apps\web"
 
 :: 优先检测可用 Python 解释器
 set "PY_CMD=python"

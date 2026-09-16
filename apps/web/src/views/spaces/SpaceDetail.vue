@@ -1,21 +1,21 @@
 <template>
-  <div v-loading="loading" class="app-page space-detail flex flex-col min-h-full bg-white rounded-2xl border border-zinc-200 overflow-hidden">
+  <div v-loading="loading" class="app-page space-detail flex flex-col min-h-full rounded-2xl border border-[var(--kh-border)] overflow-hidden">
     <!-- 层次 1：空间概览主栏 (Surface 1: 空间层级信息与空间级管理操作) -->
-    <div class="px-4 lg:px-8 py-6 border-b border-zinc-200/80 bg-white flex flex-wrap gap-4 justify-between items-center shrink-0">
+    <div class="px-4 lg:px-8 py-6 border-b border-[var(--kh-border)] bg-[var(--kh-surface)] flex flex-wrap gap-4 justify-between items-center shrink-0">
       <div class="flex items-center gap-4 min-w-0 flex-1 mr-6">
         <!-- 空间视觉锚点图标徽章 -->
-        <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl shrink-0">
+        <div class="w-12 h-12 kh-icon-tile text-xl shrink-0">
           <el-icon><FolderOpened /></el-icon>
         </div>
 
         <div class="min-w-0">
           <div class="flex flex-wrap items-center gap-2.5">
-            <h2 class="text-xl font-bold text-zinc-900 tracking-tight">{{ space?.name }}</h2>
-            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-zinc-100 text-zinc-600 border border-zinc-200/80 capitalize">
+            <h2 class="kh-title text-xl">{{ space?.name }}</h2>
+            <span class="linear-badge capitalize">
               {{ space?.visibility === 'public' ? '公开' : space?.visibility === 'private' ? '私有' : '内部' }}
             </span>
           </div>
-          <p class="text-sm text-zinc-500 mt-1 break-words">{{ space?.description || '在这里整理和共享团队知识' }}</p>
+          <p class="text-sm text-[var(--kh-text-muted)] mt-1 break-words">{{ space?.description || '在这里整理和共享团队知识' }}</p>
         </div>
       </div>
 
@@ -23,36 +23,36 @@
       <div class="flex items-center gap-2.5 shrink-0">
         <button
           @click="showMembersDrawer = true"
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-700 bg-white hover:bg-zinc-50 border border-zinc-200/90 rounded-md transition cursor-pointer shadow-2xs"
+          class="app-button app-button-ghost px-3 py-1.5 text-xs"
         >
-          <el-icon :size="13" class="text-zinc-500"><User /></el-icon>
+          <el-icon :size="13"><User /></el-icon>
           <span>成员授权 ({{ members.length }})</span>
         </button>
 
         <button
           @click="createTopicDialog = true"
-          class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-zinc-800 bg-zinc-100 hover:bg-zinc-200/80 border border-zinc-200/80 rounded-md transition cursor-pointer"
+          class="app-button app-button-dark px-3.5 py-1.5 text-xs"
         >
-          <el-icon :size="13" class="text-zinc-600"><Plus /></el-icon>
+          <el-icon :size="13"><Plus /></el-icon>
           <span>新建专题</span>
         </button>
       </div>
     </div>
 
     <!-- 层次 2：当前专题工具栏 (Surface 2: 略带灰阶底色，清晰锚定当前专注的业务专题) -->
-    <div class="px-4 lg:px-8 py-4 border-b border-zinc-200/70 bg-zinc-50/75 flex flex-wrap gap-4 justify-between items-center shrink-0">
+    <div class="px-4 lg:px-8 py-4 border-b border-[var(--kh-border)] bg-[var(--kh-surface-soft)] flex flex-wrap gap-4 justify-between items-center shrink-0">
       <div class="flex items-center gap-3 min-w-0 mr-4">
         <!-- 专题名称标识 -->
-        <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-white border border-zinc-200/80 shadow-2xs shrink-0">
-          <el-icon :size="14" class="text-blue-600"><FolderOpened /></el-icon>
-          <span class="text-xs font-bold text-zinc-900">{{ currentTopicTitle }}</span>
+        <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-md soft-panel shrink-0">
+          <el-icon :size="14" class="text-[var(--kh-primary)]"><FolderOpened /></el-icon>
+          <span class="text-xs font-bold text-[var(--kh-text)]">{{ currentTopicTitle }}</span>
         </div>
 
-        <span class="text-[11px] font-medium text-blue-700 bg-blue-50 border border-blue-200/70 px-2 py-0.5 rounded-full shrink-0">
+        <span class="kh-chip shrink-0">
           {{ filteredKnowledgeList.length }} 篇文档
         </span>
 
-        <span class="text-xs text-zinc-400 truncate max-w-lg hidden lg:inline">
+        <span class="text-xs text-[var(--kh-text-dim)] truncate max-w-lg hidden lg:inline">
           {{ currentTopicDescription }}
         </span>
       </div>
@@ -71,7 +71,7 @@
         <!-- 新建知识（鲜明高权重主按钮） -->
         <button
           @click="goToCreateKnowledge"
-          class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition shadow-xs cursor-pointer"
+          class="app-button app-button-primary px-3.5 py-1.5 text-xs"
         >
           <el-icon :size="13"><Plus /></el-icon>
           <span>新建知识</span>
@@ -81,7 +81,7 @@
         <button
           v-if="selectedTopicId !== null"
           @click="handleDeleteCurrentTopic"
-          class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs text-zinc-400 hover:text-red-600 hover:bg-red-50/80 rounded-md transition cursor-pointer"
+          class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs text-[var(--kh-text-dim)] hover:text-rose-300 hover:bg-rose-950/40 rounded-md transition cursor-pointer"
           title="删除当前专题"
         >
           <span>删除专题</span>
@@ -90,22 +90,22 @@
     </div>
 
     <!-- 层次 3：文档数据展示画布 (Surface 3: 纯平白底、精细数据表头与行交互) -->
-    <div class="flex-1 min-w-0 px-4 lg:px-8 py-5 bg-white">
+    <div class="flex-1 min-w-0 px-4 lg:px-8 py-5">
       <el-table
         v-if="filteredKnowledgeList.length > 0"
         :data="filteredKnowledgeList"
         class="w-full"
         stripe
-        :header-cell-style="{ background: '#f8fafc', color: '#475569', fontSize: '12px', fontWeight: '600', padding: '10px 0' }"
+        :header-cell-style="{ background: 'rgba(74,163,255,0.06)', color: '#7f9bb3', fontSize: '12px', fontWeight: '600', padding: '10px 0' }"
         :row-style="{ fontSize: '13px' }"
       >
         <el-table-column prop="title" label="文档标题" min-width="280">
           <template #default="{ row }">
             <div class="flex items-center gap-2 py-0.5">
-              <span v-if="row.source_type === 'file_import'" class="text-[10px] px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200/80 font-medium">
+              <span v-if="row.source_type === 'file_import'" class="text-[10px] px-1.5 py-0.2 rounded bg-amber-950/40 text-amber-200 border border-amber-500/30 font-medium">
                 导入
               </span>
-              <button class="text-left font-medium text-zinc-900 hover:text-blue-600 hover:underline cursor-pointer" @click="goToKnowledge(row.id)">
+              <button class="text-left font-medium text-[var(--kh-text)] hover:text-[var(--kh-primary)] hover:underline cursor-pointer" @click="goToKnowledge(row.id)">
                 {{ row.title }}
               </button>
             </div>
@@ -113,32 +113,32 @@
         </el-table-column>
         <el-table-column prop="content_type" label="格式" width="100">
           <template #default="{ row }">
-            <span class="text-xs px-2 py-0.5 rounded bg-zinc-100 text-zinc-600 border border-zinc-200/80 font-mono">
+            <span class="text-xs px-2 py-0.5 rounded bg-[var(--kh-fill)] text-[var(--kh-text-soft)] border border-[var(--kh-border)] font-mono">
               {{ row.content_type }}
             </span>
           </template>
         </el-table-column>
         <el-table-column label="标签" min-width="150">
           <template #default="{ row }">
-            <span v-for="t in row.tags" :key="t" class="text-xs mr-1 text-zinc-500 bg-zinc-50 border border-zinc-200/70 px-1.5 py-0.5 rounded">
+            <span v-for="t in row.tags" :key="t" class="text-xs mr-1 text-[var(--kh-text-muted)] bg-[var(--kh-surface-soft)] border border-[var(--kh-border)] px-1.5 py-0.5 rounded">
               #{{ t }}
             </span>
-            <span v-if="!row.tags || row.tags.length === 0" class="text-zinc-300 text-xs">-</span>
+            <span v-if="!row.tags || row.tags.length === 0" class="text-[var(--kh-text-dim)] text-xs">-</span>
           </template>
         </el-table-column>
         <el-table-column label="版本" width="90">
           <template #default="{ row }">
-            <span class="text-xs text-zinc-400 font-mono">v{{ row.current_version_id || 1 }}</span>
+            <span class="text-xs text-[var(--kh-text-dim)] font-mono">v{{ row.current_version_id || 1 }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="updated_at" label="最后更新" width="170">
           <template #default="{ row }">
-            <span class="text-xs text-zinc-400">{{ formatDate(row.updated_at) }}</span>
+            <span class="text-xs text-[var(--kh-text-dim)]">{{ formatDate(row.updated_at) }}</span>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="120" align="right">
           <template #default="{ row }">
-            <button class="text-xs font-medium text-blue-600 hover:text-blue-800 mr-3 cursor-pointer" @click="goToEdit(row.id)">编辑</button>
+            <button class="text-xs font-medium text-[var(--kh-primary)] hover:text-[#8cc5ff] mr-3 cursor-pointer" @click="goToEdit(row.id)">编辑</button>
             <button class="text-xs font-medium text-red-500 hover:text-red-700 cursor-pointer" @click="deleteKnowledge(row.id)">删除</button>
           </template>
         </el-table-column>
@@ -146,11 +146,11 @@
 
       <!-- 空数据状态：精致指引 -->
       <div v-if="!loading && filteredKnowledgeList.length === 0" class="py-16 text-center">
-        <div class="w-12 h-12 rounded-2xl bg-zinc-100 text-zinc-400 flex items-center justify-center mx-auto mb-3 text-xl">
-          📑
+        <div class="w-12 h-12 kh-icon-tile mx-auto mb-3 text-xl">
+          ·
         </div>
-        <div class="text-sm font-semibold text-zinc-700 mb-1">{{ searchQuery ? '没有找到匹配的文档' : '当前专题下暂无知识文档' }}</div>
-        <p class="text-xs text-zinc-400 mb-4 max-w-sm mx-auto">
+        <div class="text-sm font-semibold text-[var(--kh-text-soft)] mb-1">{{ searchQuery ? '没有找到匹配的文档' : '当前专题下暂无知识文档' }}</div>
+        <p class="text-xs text-[var(--kh-text-dim)] mb-4 max-w-sm mx-auto">
           {{ searchQuery ? '试试其他关键词，或清除筛选查看全部文档。' : '创建第一篇文档，开始积累这个专题的知识。' }}
         </p>
         <button
@@ -187,7 +187,7 @@
     <!-- 成员与权限抽屉 -->
     <el-drawer v-model="showMembersDrawer" title="空间成员与权限授权" size="min(500px, 100vw)">
       <div class="flex justify-between items-center mb-4">
-        <span class="text-xs text-zinc-500">已授权成员共 {{ members.length }} 人</span>
+        <span class="text-xs text-[var(--kh-text-muted)]">已授权成员共 {{ members.length }} 人</span>
         <el-button v-if="auth.isAdmin" size="small" type="primary" @click="addMemberDialog = true">
           <el-icon class="mr-1"><Plus /></el-icon> 添加成员
         </el-button>

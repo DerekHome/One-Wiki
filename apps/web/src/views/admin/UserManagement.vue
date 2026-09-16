@@ -1,14 +1,14 @@
 <template>
-  <div class="max-w-5xl mx-auto pb-12">
+  <div class="app-page max-w-5xl mx-auto px-4 lg:px-8 py-6 pb-12">
     <div class="flex justify-between items-center mb-6">
       <div>
-        <h2 class="text-2xl font-bold text-slate-800">用户与系统角色</h2>
-        <p class="text-slate-500 text-sm mt-1">全局统一 RBAC 用户账户管控与状态调度</p>
+        <h2 class="kh-title text-2xl">用户与系统角色</h2>
+        <p class="text-[var(--kh-text-muted)] text-sm mt-1">全局统一 RBAC 用户账户管控与状态调度</p>
       </div>
       <el-button type="primary" @click="createDialog = true">添加用户</el-button>
     </div>
 
-    <el-card shadow="never" class="border border-slate-200 rounded-xl" v-loading="loading">
+    <el-card shadow="never" class="rounded-xl" v-loading="loading">
       <el-table :data="users" class="w-full">
         <el-table-column prop="id" label="ID" width="70" />
         <el-table-column prop="username" label="用户名" font-weight="bold" />

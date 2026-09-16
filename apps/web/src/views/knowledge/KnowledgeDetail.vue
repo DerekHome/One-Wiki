@@ -4,7 +4,7 @@
     <div class="flex-1 overflow-y-auto px-5 lg:px-8 py-8 lg:py-10">
       <div class="max-w-4xl mx-auto">
         <!-- 顶部面包屑与快捷返回 -->
-        <div class="flex items-center justify-between text-xs text-zinc-500 mb-8">
+        <div class="flex items-center justify-between text-xs text-[var(--kh-text-muted)] mb-8">
           <button
             @click="$router.push(`/spaces/${knowledge?.space_id}`)"
             class="app-button app-button-ghost px-3 py-2"
@@ -13,10 +13,10 @@
             <span>返回空间目录</span>
           </button>
           <div class="flex items-center gap-2">
-            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-100">
+            <span class="kh-chip">
               v{{ knowledge?.current_version_id || 1 }}
             </span>
-            <span class="text-zinc-300">·</span>
+            <span class="text-[var(--kh-text-dim)]">·</span>
             <span>更新于 {{ formatDate(knowledge?.updated_at) }}</span>
           </div>
         </div>
@@ -25,10 +25,10 @@
         <div class="linear-card p-6 lg:p-7 mb-6">
           <div class="flex items-start justify-between gap-5">
             <div class="min-w-0">
-              <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-700 border border-blue-100 flex items-center justify-center mb-4">
+              <div class="w-12 h-12 kh-icon-tile mb-4">
                 <el-icon :size="23"><Document /></el-icon>
               </div>
-              <h1 class="text-3xl font-bold tracking-tight text-zinc-950 leading-tight">
+              <h1 class="kh-title text-3xl leading-tight">
                 {{ knowledge?.title }}
               </h1>
             </div>
@@ -52,21 +52,21 @@
           </div>
 
           <!-- Notion 风格紧凑属性元数据条 -->
-          <div class="mt-6 pt-5 border-t border-zinc-100/80 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-zinc-500">
+          <div class="mt-6 pt-5 border-t border-[var(--kh-border)] grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-[var(--kh-text-muted)]">
             <div class="flex items-center gap-2">
-              <span class="text-zinc-400">知识类型</span>
-              <span class="font-medium text-zinc-700 capitalize">{{ knowledge?.knowledge_type }}</span>
+              <span class="text-[var(--kh-text-dim)]">知识类型</span>
+              <span class="font-medium text-[var(--kh-text-soft)] capitalize">{{ knowledge?.knowledge_type }}</span>
             </div>
             <div class="flex items-center gap-2">
-              <span class="text-zinc-400">来源格式</span>
-              <span class="font-medium text-zinc-700 uppercase font-mono text-[11px]">{{ knowledge?.content_type }}</span>
+              <span class="text-[var(--kh-text-dim)]">来源格式</span>
+              <span class="font-medium text-[var(--kh-text-soft)] uppercase font-mono text-[11px]">{{ knowledge?.content_type }}</span>
             </div>
             <div class="flex items-center gap-1.5 flex-wrap" v-if="knowledge?.tags?.length">
-              <span class="text-zinc-400">标签</span>
+              <span class="text-[var(--kh-text-dim)]">标签</span>
               <span
                 v-for="t in knowledge.tags"
                 :key="t"
-                class="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100 font-medium text-[11px]"
+                class="kh-chip"
               >
                 #{{ t }}
               </span>
@@ -80,10 +80,10 @@
         </article>
 
         <!-- 底部元数据与快捷操作 -->
-        <div class="mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-xs text-zinc-500">
-          <div>知识唯一标识: <span class="font-mono text-zinc-600">#{{ knowledge?.id }}</span></div>
+        <div class="mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-xs text-[var(--kh-text-muted)]">
+          <div>知识唯一标识: <span class="font-mono text-[var(--kh-text-soft)]">#{{ knowledge?.id }}</span></div>
           <div class="flex items-center gap-3">
-            <button @click="goToEdit" class="text-blue-700 hover:text-blue-800 font-semibold transition-colors">编辑此文档</button>
+            <button @click="goToEdit" class="text-[var(--kh-primary)] hover:text-[#8cc5ff] font-semibold transition-colors">编辑此文档</button>
             <button @click="handleDelete" class="text-rose-500 hover:text-rose-700 font-medium transition-colors">删除文档</button>
           </div>
         </div>
@@ -91,7 +91,7 @@
     </div>
 
     <!-- 右侧：GitBook 风格目录与版本/附件抽屉栏 -->
-    <aside class="w-80 bg-white/90 border-l border-zinc-200/80 p-5 overflow-y-auto shrink-0 hidden lg:block select-none">
+    <aside class="w-80 bg-[var(--kh-surface-soft)] border-l border-[var(--kh-border)] p-5 overflow-y-auto shrink-0 hidden lg:block select-none">
       <div class="space-y-6">
         <!-- 快捷操作按钮组 (Linear 风格) -->
         <div class="flex items-center gap-2">
@@ -113,19 +113,19 @@
 
         <!-- 版本历史记录 -->
         <div class="linear-card p-4">
-          <div class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-3">版本历史</div>
+          <div class="text-[11px] font-semibold text-[var(--kh-text-dim)] uppercase tracking-wider mb-3 font-mono">版本历史</div>
           <div class="space-y-2">
             <div
               v-for="v in versions"
               :key="v.id"
               class="p-2.5 rounded-lg border text-xs transition-colors"
-              :class="v.version_number === knowledge?.current_version_id ? 'border-blue-200 bg-blue-50/80 shadow-sm' : 'border-zinc-100 hover:border-zinc-200'"
+              :class="v.version_number === knowledge?.current_version_id ? 'border-[var(--kh-border-strong)] bg-[var(--kh-primary-soft)] shadow-sm' : 'border-[var(--kh-border)] hover:border-[var(--kh-border-strong)]'"
             >
               <div class="flex justify-between items-center mb-1">
-                <span class="font-semibold text-zinc-800">v{{ v.version_number }}</span>
-                <span class="text-[10px] text-zinc-400">{{ formatDate(v.created_at) }}</span>
+                <span class="font-semibold text-[var(--kh-text)]">v{{ v.version_number }}</span>
+                <span class="text-[10px] text-[var(--kh-text-dim)]">{{ formatDate(v.created_at) }}</span>
               </div>
-              <div class="text-zinc-500 text-[11px] truncate">{{ v.change_summary || '常规修改' }}</div>
+              <div class="text-[var(--kh-text-muted)] text-[11px] truncate">{{ v.change_summary || '常规修改' }}</div>
               <div class="mt-2 flex justify-end" v-if="v.version_number !== knowledge?.current_version_id">
                 <button
                   @click="restoreVersion(v.version_number)"
@@ -141,24 +141,24 @@
         <!-- 附件清单 -->
         <div class="linear-card p-4">
           <div class="flex justify-between items-center mb-2">
-            <span class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">关联附件</span>
+            <span class="text-[11px] font-semibold text-[var(--kh-text-dim)] uppercase tracking-wider font-mono">关联附件</span>
             <el-upload action="#" :http-request="handleUploadAttachment" :show-file-list="false">
-              <button class="text-[11px] text-blue-600 hover:text-blue-700 font-medium">+ 上传</button>
+              <button class="text-[11px] text-[var(--kh-primary)] hover:text-[#8cc5ff] font-medium">+ 上传</button>
             </el-upload>
           </div>
           <div class="space-y-1.5">
             <div
               v-for="a in attachments"
               :key="a.id"
-              class="flex items-center justify-between p-2 rounded-md hover:bg-zinc-50 text-xs text-zinc-600 group border border-transparent hover:border-zinc-200/60 transition-colors"
+              class="flex items-center justify-between p-2 rounded-md hover:bg-[var(--kh-fill)] text-xs text-[var(--kh-text-soft)] group border border-transparent hover:border-[var(--kh-border)] transition-colors"
             >
               <span class="truncate max-w-[140px]" :title="a.filename">{{ a.filename }}</span>
               <div class="flex items-center gap-2">
-                <button @click="downloadAttachment(a.id)" class="text-blue-600 hover:text-blue-800 text-[11px]">下载</button>
+                <button @click="downloadAttachment(a.id)" class="text-[var(--kh-primary)] hover:text-[#8cc5ff] text-[11px]">下载</button>
                 <button @click="deleteAttachment(a.id)" class="text-rose-500 hover:text-rose-700 text-[11px] opacity-0 group-hover:opacity-100 transition-opacity">×</button>
               </div>
             </div>
-            <div v-if="!attachments.length" class="text-xs text-zinc-400 py-2 italic text-center">暂无附件</div>
+            <div v-if="!attachments.length" class="text-xs text-[var(--kh-text-dim)] py-2 italic text-center">暂无附件</div>
           </div>
         </div>
       </div>
@@ -310,7 +310,7 @@ onMounted(() => {
 
 <style scoped>
 :deep(.notion-prose) {
-  color: #27272a;
+  color: var(--kh-text-soft);
   line-height: 1.75;
   font-size: 14px;
 }
@@ -318,27 +318,27 @@ onMounted(() => {
 :deep(.notion-prose h1) {
   font-size: 22px;
   font-weight: 700;
-  color: #18181b;
+  color: var(--kh-text);
   margin-top: 24px;
   margin-bottom: 12px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #e4e4e7;
+  border-bottom: 1px solid var(--kh-border);
 }
 
 :deep(.notion-prose h2) {
   font-size: 17px;
   font-weight: 700;
-  color: #18181b;
+  color: var(--kh-text);
   margin-top: 20px;
   margin-bottom: 10px;
   padding-bottom: 6px;
-  border-bottom: 1px solid #f4f4f5;
+  border-bottom: 1px solid var(--kh-border);
 }
 
 :deep(.notion-prose h3) {
   font-size: 15px;
   font-weight: 600;
-  color: #27272a;
+  color: var(--kh-text);
   margin-top: 16px;
   margin-bottom: 8px;
 }
@@ -369,17 +369,17 @@ onMounted(() => {
 
 :deep(.notion-prose strong) {
   font-weight: 700;
-  color: #09090b;
+  color: var(--kh-text);
 }
 
 :deep(.notion-prose code) {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
-  background-color: #f4f4f5;
-  color: #e11d48;
+  background-color: var(--kh-primary-soft);
+  color: #1d4ed8;
   padding: 2px 6px;
   border-radius: 4px;
-  border: 1px solid #e4e4e7;
+  border: 1px solid #dbeafe;
 }
 
 :deep(.notion-prose pre) {
@@ -394,10 +394,10 @@ onMounted(() => {
 }
 
 :deep(.notion-prose blockquote) {
-  border-left: 3px solid #3b82f6;
+  border-left: 3px solid var(--kh-primary);
   padding-left: 14px;
-  color: #71717a;
-  background-color: #f8fafc;
+  color: var(--kh-text-muted);
+  background-color: var(--kh-fill);
   margin-top: 12px;
   margin-bottom: 12px;
   padding-top: 4px;
@@ -415,14 +415,14 @@ onMounted(() => {
 
 :deep(.notion-prose th),
 :deep(.notion-prose td) {
-  border: 1px solid #e4e4e7;
+  border: 1px solid var(--kh-border);
   padding: 8px 12px;
   text-align: left;
 }
 
 :deep(.notion-prose th) {
-  background-color: #f8fafc;
+  background-color: #f4f4f5;
   font-weight: 600;
-  color: #3f3f46;
+  color: var(--kh-text-soft);
 }
 </style>

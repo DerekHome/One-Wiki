@@ -4,12 +4,12 @@
     <!-- 顶栏标题与统计指标 -->
     <div class="flex flex-col lg:flex-row lg:justify-between lg:items-end gap-5 mb-7">
       <div>
-        <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100 text-[11px] font-semibold mb-3">
+        <div class="kh-chip mb-3">
           <el-icon :size="13"><FolderOpened /></el-icon>
-          <span>Knowledge Spaces</span>
+          <span>KNOWLEDGE SPACES</span>
         </div>
-        <h1 class="text-3xl font-bold tracking-tight text-zinc-950">知识空间</h1>
-        <p class="text-sm text-zinc-500 mt-2 max-w-2xl">组织与隔离业务知识的核心工作区，支持细粒度权限管控与成员协作。</p>
+        <h1 class="kh-title text-3xl">知识空间</h1>
+        <p class="text-sm text-[var(--kh-text-muted)] mt-2 max-w-2xl">组织与隔离业务知识的核心工作区，支持细粒度权限管控与成员协作。</p>
       </div>
       <button
         @click="openCreateDialog"
@@ -22,16 +22,16 @@
 
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-7">
       <div class="metric-card p-4">
-        <div class="text-[11px] text-zinc-500">空间总数</div>
-        <div class="text-2xl font-bold text-zinc-950 mt-1">{{ spaces.length }}</div>
+        <div class="text-[11px] text-[var(--kh-text-muted)]">空间总数</div>
+        <div class="text-2xl font-bold text-[var(--kh-text)] mt-1">{{ spaces.length }}</div>
       </div>
       <div class="metric-card p-4">
-        <div class="text-[11px] text-zinc-500">公开空间</div>
-        <div class="text-2xl font-bold text-emerald-700 mt-1">{{ publicSpaceCount }}</div>
+        <div class="text-[11px] text-[var(--kh-text-muted)]">公开空间</div>
+        <div class="text-2xl font-bold text-[var(--kh-cyan)] mt-1">{{ publicSpaceCount }}</div>
       </div>
       <div class="metric-card p-4">
-        <div class="text-[11px] text-zinc-500">私有空间</div>
-        <div class="text-2xl font-bold text-zinc-950 mt-1">{{ privateSpaceCount }}</div>
+        <div class="text-[11px] text-[var(--kh-text-muted)]">私有空间</div>
+        <div class="text-2xl font-bold text-[var(--kh-text)] mt-1">{{ privateSpaceCount }}</div>
       </div>
     </div>
 
@@ -47,10 +47,10 @@
           <div>
             <div class="flex items-start justify-between gap-3 mb-4">
               <div class="flex items-center gap-3 min-w-0">
-                <span class="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 border border-blue-100 flex items-center justify-center shrink-0">
+                <span class="w-10 h-10 kh-icon-tile shrink-0">
                   <el-icon :size="18"><FolderOpened /></el-icon>
                 </span>
-                <h3 class="font-semibold text-base text-zinc-950 truncate group-hover:text-blue-700 transition-colors">
+                <h3 class="font-semibold text-base text-[var(--kh-text)] truncate group-hover:text-[var(--kh-primary)] transition-colors">
                   {{ space.name }}
                 </h3>
               </div>
@@ -61,28 +61,28 @@
                 {{ visibilityLabel(space.visibility) }}
               </span>
             </div>
-            <p class="text-sm text-zinc-600 line-clamp-3 leading-6">
+            <p class="text-sm text-[var(--kh-text-muted)] line-clamp-3 leading-6">
               {{ space.description || '暂无详细描述信息' }}
             </p>
           </div>
 
           <div>
-            <div class="grid grid-cols-2 gap-2 pt-4 mt-4 border-t border-zinc-100 text-[11px]">
-              <div class="rounded-lg bg-zinc-50 border border-zinc-100 p-2">
-                <div class="text-zinc-400">创建日期</div>
-                <div class="font-medium text-zinc-700 mt-0.5">{{ formatDate(space.created_at) }}</div>
+            <div class="grid grid-cols-2 gap-2 pt-4 mt-4 border-t border-[var(--kh-border)] text-[11px]">
+              <div class="rounded-lg bg-[var(--kh-surface-soft)] border border-[var(--kh-border)] p-2">
+                <div class="text-[var(--kh-text-dim)]">创建日期</div>
+                <div class="font-medium text-[var(--kh-text-soft)] mt-0.5">{{ formatDate(space.created_at) }}</div>
               </div>
-              <div class="rounded-lg bg-zinc-50 border border-zinc-100 p-2">
-                <div class="text-zinc-400">空间编号</div>
-                <div class="font-mono font-medium text-zinc-700 mt-0.5">#{{ space.id }}</div>
+              <div class="rounded-lg bg-[var(--kh-surface-soft)] border border-[var(--kh-border)] p-2">
+                <div class="text-[var(--kh-text-dim)]">空间编号</div>
+                <div class="font-mono font-medium text-[var(--kh-text-soft)] mt-0.5">#{{ space.id }}</div>
               </div>
             </div>
-            <div class="flex items-center justify-between text-xs text-zinc-500 pt-4">
+            <div class="flex items-center justify-between text-xs text-[var(--kh-text-muted)] pt-4">
               <span class="inline-flex items-center gap-1.5">
                 <el-icon :size="13"><Document /></el-icon>
                 <span>进入后查看文档</span>
               </span>
-              <span class="text-blue-700 font-semibold flex items-center gap-1 transition-transform group-hover:translate-x-0.5">
+              <span class="text-[var(--kh-primary)] font-semibold flex items-center gap-1 transition-transform group-hover:translate-x-0.5">
                 进入
                 <el-icon :size="13"><ArrowRight /></el-icon>
               </span>
@@ -192,9 +192,9 @@ function visibilityLabel(value: string) {
 }
 
 function visibilityClass(value: string) {
-  if (value === 'public') return 'text-emerald-700 bg-emerald-50 border-emerald-200'
-  if (value === 'private') return 'text-rose-700 bg-rose-50 border-rose-200'
-  return 'text-blue-700 bg-blue-50 border-blue-200'
+  if (value === 'public') return 'text-[var(--kh-cyan)] bg-[rgba(94,234,212,0.08)] border-[rgba(94,234,212,0.22)]'
+  if (value === 'private') return 'text-rose-300 bg-rose-950/40 border-rose-500/30'
+  return 'text-[var(--kh-primary)] bg-[var(--kh-primary-soft)] border-[var(--kh-border)]'
 }
 
 onMounted(() => {

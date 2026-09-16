@@ -11,25 +11,25 @@
     <transition name="el-fade-in">
       <div
         v-if="isDragging"
-        class="fixed inset-0 z-50 bg-blue-600/10 backdrop-blur-xs flex items-center justify-center select-none pointer-events-none"
+        class="fixed inset-0 z-50 bg-black/20 backdrop-blur-sm flex items-center justify-center select-none pointer-events-none"
       >
-        <div class="bg-white p-8 rounded-2xl border-2 border-dashed border-blue-500 shadow-2xl flex flex-col items-center">
-          <div class="text-5xl mb-3">📥</div>
-          <h3 class="text-lg font-bold text-zinc-900">松开鼠标，即可自动导入并解析</h3>
-          <p class="text-xs text-zinc-500 mt-1">支持 .md、.markdown、.html、.htm，将自动提炼文章标题与正文</p>
+        <div class="soft-panel p-8 rounded-2xl border-2 border-dashed border-[var(--kh-primary)] shadow-2xl flex flex-col items-center">
+          <pre class="text-[var(--kh-primary)] text-xs font-mono leading-tight mb-3">· (●) ·</pre>
+          <h3 class="text-lg font-bold text-[var(--kh-text)]">松开鼠标，即可自动导入并解析</h3>
+          <p class="text-xs text-[var(--kh-text-muted)] mt-1">支持 .md、.markdown、.html、.htm，将自动提炼文章标题与正文</p>
         </div>
       </div>
     </transition>
 
     <div class="mb-6">
-      <p class="text-sm font-medium text-blue-600 mb-2">知识创作</p>
-      <h1 class="text-3xl font-bold tracking-tight text-zinc-900">{{ isEdit ? '编辑知识' : '记录新的知识' }}</h1>
-      <p class="text-sm text-zinc-500 mt-2">专注内容，让经验成为可以共享的知识。</p>
+      <p class="kh-kicker mb-2">知识创作</p>
+      <h1 class="kh-title text-3xl">{{ isEdit ? '编辑知识' : '记录新的知识' }}</h1>
+      <p class="text-sm text-[var(--kh-text-muted)] mt-2">专注内容，让经验成为可以共享的知识。</p>
     </div>
-    <div class="editor-actions mb-4 flex flex-wrap gap-3 items-center justify-between sticky top-0 z-20 bg-white/95 border border-zinc-200 rounded-xl p-3">
+    <div class="editor-actions mb-4 flex flex-wrap gap-3 items-center justify-between sticky top-0 z-20 soft-panel rounded-xl p-3">
       <el-button link @click="$router.back()">← 取消返回</el-button>
       <div class="hidden xl:flex items-center gap-2">
-        <span class="text-xs text-zinc-400 bg-zinc-100 px-2.5 py-1 rounded-full border border-zinc-200 flex items-center gap-1.5">
+        <span class="text-xs text-[var(--kh-text-dim)] bg-[var(--kh-fill)] px-2.5 py-1 rounded-full border border-[var(--kh-border)] flex items-center gap-1.5">
           <span>💡</span>
           <span>支持将本地 .md / .html 文件直接拖拽至此页面自动填充</span>
         </span>
@@ -39,14 +39,14 @@
       </el-button>
     </div>
 
-    <div class="metric-card p-5 lg:p-8 mb-4 relative" :class="{ 'border-blue-500 bg-blue-50/20': isDragging }">
+    <div class="metric-card p-5 lg:p-8 mb-4 relative" :class="{ 'border-[var(--kh-primary)] bg-[var(--kh-primary-soft)]': isDragging }">
       <el-form label-position="top">
         <el-form-item label="知识标题" required>
           <el-input v-model="form.title" size="large" placeholder="请输入知识标题或拖拽文件自动解析..." />
         </el-form-item>
 
-        <details class="editor-metadata mb-6 rounded-xl border border-zinc-200 bg-zinc-50/60 p-4" :open="!isEdit">
-          <summary class="cursor-pointer text-sm font-medium text-zinc-700">分类与版本信息 <span class="text-xs font-normal text-zinc-500 ml-2">空间、类型、标签{{ isEdit ? '与变更说明' : '' }}</span></summary>
+        <details class="editor-metadata mb-6 rounded-xl border border-[var(--kh-border)] bg-[var(--kh-surface-soft)] p-4" :open="!isEdit">
+          <summary class="cursor-pointer text-sm font-medium text-[var(--kh-text-soft)]">分类与版本信息 <span class="text-xs font-normal text-[var(--kh-text-muted)] ml-2">空间、类型、标签{{ isEdit ? '与变更说明' : '' }}</span></summary>
         <el-row :gutter="20" class="mt-4">
           <el-col :xs="24" :sm="12">
             <el-form-item label="所属空间" required>
@@ -97,7 +97,7 @@
             />
           </div>
         </el-form-item>
-        <div class="flex flex-wrap justify-between gap-2 text-xs text-zinc-500" aria-live="polite">
+        <div class="flex flex-wrap justify-between gap-2 text-xs text-[var(--kh-text-muted)]" aria-live="polite">
           <span>支持 Markdown / HTML，也可拖入本地文件</span>
           <span>{{ form.content.length.toLocaleString() }} 字符 · {{ saving ? '正在保存…' : '点击发布后保存' }}</span>
         </div>

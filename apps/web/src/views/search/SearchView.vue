@@ -2,12 +2,12 @@
   <div class="app-page min-h-full px-5 lg:px-8 py-8">
   <div class="max-w-6xl mx-auto pb-12">
     <div class="mb-7">
-      <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100 text-[11px] font-semibold mb-3">
+      <div class="kh-chip mb-3">
         <el-icon :size="13"><SearchIcon /></el-icon>
-        <span>Full Text Search</span>
+        <span>FULL TEXT SEARCH</span>
       </div>
-      <h2 class="text-3xl font-bold tracking-tight text-zinc-950">企业全文检索</h2>
-      <p class="text-zinc-500 text-sm mt-2">基于 PostgreSQL 联合检索知识标题、正文与摘要切片。</p>
+      <h2 class="kh-title text-3xl">企业全文检索</h2>
+      <p class="text-[var(--kh-text-muted)] text-sm mt-2">基于 PostgreSQL 联合检索知识标题、正文与摘要切片。</p>
     </div>
 
     <div class="linear-card p-4 lg:p-5 mb-6">
@@ -33,7 +33,7 @@
         <el-select v-model="selectedTag" placeholder="筛选标签" clearable class="w-full sm:w-52">
           <el-option v-for="t in tags" :key="t.id" :label="t.name" :value="t.name" />
         </el-select>
-        <span class="hidden sm:inline-flex items-center text-xs text-zinc-400">
+        <span class="hidden sm:inline-flex items-center text-xs text-[var(--kh-text-dim)]">
           {{ hasSearched ? `找到 ${total} 条结果` : '输入关键词后开始检索' }}
         </span>
       </div>
@@ -49,12 +49,12 @@
         >
           <div class="flex justify-between items-start gap-4 mb-3">
             <div class="flex items-start gap-3 min-w-0">
-              <span class="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 border border-blue-100 flex items-center justify-center shrink-0">
+              <span class="w-9 h-9 kh-icon-tile shrink-0">
                 <el-icon :size="17"><Document /></el-icon>
               </span>
               <div class="min-w-0">
-                <h3 class="text-base font-bold text-zinc-950 group-hover:text-blue-700 transition-colors truncate">{{ item.title }}</h3>
-                <div class="flex items-center gap-2 mt-1 text-[11px] text-zinc-400">
+                <h3 class="text-base font-bold text-[var(--kh-text)] group-hover:text-[var(--kh-primary)] transition-colors truncate">{{ item.title }}</h3>
+                <div class="flex items-center gap-2 mt-1 text-[11px] text-[var(--kh-text-dim)]">
                   <span>最后更新: {{ formatDate(item.updated_at) }}</span>
                   <span>·</span>
                   <span>v{{ item.version || 1 }}</span>
@@ -63,9 +63,9 @@
             </div>
             <span class="linear-badge shrink-0">文档</span>
           </div>
-          <p class="text-zinc-600 text-sm leading-7 bg-zinc-50/80 border border-zinc-100 rounded-lg px-3 py-2">{{ item.snippet }}</p>
-          <div class="text-xs text-zinc-400 mt-3 flex justify-end">
-            <span class="text-blue-700 font-semibold flex items-center gap-1 transition-transform group-hover:translate-x-0.5">
+          <p class="text-[var(--kh-text-muted)] text-sm leading-7 bg-[var(--kh-surface-soft)] border border-[var(--kh-border)] rounded-lg px-3 py-2">{{ item.snippet }}</p>
+          <div class="text-xs text-[var(--kh-text-dim)] mt-3 flex justify-end">
+            <span class="text-[var(--kh-primary)] font-semibold flex items-center gap-1 transition-transform group-hover:translate-x-0.5">
               查看详情
               <el-icon :size="13"><ArrowRight /></el-icon>
             </span>

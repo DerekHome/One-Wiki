@@ -1,9 +1,9 @@
 <template>
-  <div class="max-w-4xl mx-auto pb-12">
+  <div class="app-page max-w-4xl mx-auto px-4 lg:px-8 py-6 pb-12">
     <div class="flex justify-between items-center mb-6">
       <div>
-        <h2 class="text-2xl font-bold text-slate-800">企业标签池</h2>
-        <p class="text-slate-500 text-sm mt-1">跨空间维护统一分类与多维索引标准</p>
+        <h2 class="kh-title text-2xl">企业标签池</h2>
+        <p class="text-[var(--kh-text-muted)] text-sm mt-1">跨空间维护统一分类与多维索引标准</p>
       </div>
       <div class="flex gap-2">
         <el-input v-model="newTagName" placeholder="输入新标签名..." class="w-48" @keyup.enter="handleCreateTag" />
@@ -11,7 +11,7 @@
       </div>
     </div>
 
-    <el-card shadow="never" class="border border-slate-200 rounded-xl" v-loading="loading">
+    <el-card shadow="never" class="rounded-xl" v-loading="loading">
       <el-table :data="tags" class="w-full">
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="name" label="标签名称">

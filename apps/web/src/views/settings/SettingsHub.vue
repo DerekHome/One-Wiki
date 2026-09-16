@@ -1,9 +1,9 @@
 <template>
   <div class="app-page settings-page max-w-6xl mx-auto px-4 py-6 lg:px-8 pb-16">
     <div class="mb-8">
-      <p class="text-sm font-medium text-blue-600 mb-2">管理与设置</p>
-      <h1 class="text-3xl font-bold tracking-tight text-zinc-900">系统配置中心</h1>
-      <p class="text-sm text-zinc-500 mt-2">查看知识库概况，管理成员、存储与系统偏好。</p>
+      <p class="kh-kicker mb-2">管理与设置</p>
+      <h1 class="kh-title text-3xl">系统配置中心</h1>
+      <p class="text-sm text-[var(--kh-text-muted)] mt-2">查看知识库概况，管理成员、存储与系统偏好。</p>
     </div>
 
     <el-tabs v-model="activeTab" class="settings-tabs metric-card p-4 lg:p-6">
@@ -11,60 +11,60 @@
       <el-tab-pane label="数据大盘" name="stats">
         <div v-loading="loadingStats">
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div class="linear-card p-4 border border-zinc-200">
-              <div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">知识文档总量</div>
-              <div class="text-2xl font-bold text-zinc-900 mt-2">{{ stats?.total_knowledge || 0 }}</div>
+            <div class="linear-card p-4 border border-[var(--kh-border)]">
+              <div class="text-[11px] font-medium text-[var(--kh-text-dim)] uppercase tracking-wider">知识文档总量</div>
+              <div class="text-2xl font-bold text-[var(--kh-text)] mt-2">{{ stats?.total_knowledge || 0 }}</div>
               <div class="text-[11px] text-emerald-600 mt-1">已发布正式文档</div>
             </div>
-            <div class="linear-card p-4 border border-zinc-200">
-              <div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">历史版本快照</div>
-              <div class="text-2xl font-bold text-zinc-900 mt-2">{{ stats?.total_versions || 0 }}</div>
-              <div class="text-[11px] text-zinc-400 mt-1">全量版本溯源记录</div>
+            <div class="linear-card p-4 border border-[var(--kh-border)]">
+              <div class="text-[11px] font-medium text-[var(--kh-text-dim)] uppercase tracking-wider">历史版本快照</div>
+              <div class="text-2xl font-bold text-[var(--kh-text)] mt-2">{{ stats?.total_versions || 0 }}</div>
+              <div class="text-[11px] text-[var(--kh-text-dim)] mt-1">全量版本溯源记录</div>
             </div>
-            <div class="linear-card p-4 border border-zinc-200">
-              <div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">知识空间数</div>
-              <div class="text-2xl font-bold text-zinc-900 mt-2">{{ stats?.total_spaces || 0 }}</div>
-              <div class="text-[11px] text-blue-600 mt-1">核心业务隔离区</div>
+            <div class="linear-card p-4 border border-[var(--kh-border)]">
+              <div class="text-[11px] font-medium text-[var(--kh-text-dim)] uppercase tracking-wider">知识空间数</div>
+              <div class="text-2xl font-bold text-[var(--kh-text)] mt-2">{{ stats?.total_spaces || 0 }}</div>
+              <div class="text-[11px] text-[var(--kh-primary)] mt-1">核心业务隔离区</div>
             </div>
-            <div class="linear-card p-4 border border-zinc-200">
-              <div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">附件存储占用</div>
-              <div class="text-2xl font-bold text-zinc-900 mt-2">{{ stats?.storage_size_mb || 0 }} <span class="text-xs font-normal text-zinc-500">MB</span></div>
-              <div class="text-[11px] text-zinc-400 mt-1">共计 {{ stats?.total_attachments || 0 }} 个附件文件</div>
+            <div class="linear-card p-4 border border-[var(--kh-border)]">
+              <div class="text-[11px] font-medium text-[var(--kh-text-dim)] uppercase tracking-wider">附件存储占用</div>
+              <div class="text-2xl font-bold text-[var(--kh-text)] mt-2">{{ stats?.storage_size_mb || 0 }} <span class="text-xs font-normal text-[var(--kh-text-muted)]">MB</span></div>
+              <div class="text-[11px] text-[var(--kh-text-dim)] mt-1">共计 {{ stats?.total_attachments || 0 }} 个附件文件</div>
             </div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="linear-card p-5 border border-zinc-200">
-              <h4 class="font-semibold text-sm text-zinc-800 mb-3">用户与安全概览</h4>
+            <div class="linear-card p-5 border border-[var(--kh-border)]">
+              <h4 class="font-semibold text-sm text-[var(--kh-text-soft)] mb-3">用户与安全概览</h4>
               <div class="space-y-3 text-xs">
-                <div class="flex justify-between py-1 border-b border-zinc-100">
-                  <span class="text-zinc-500">注册总用户数</span>
-                  <span class="font-medium text-zinc-800">{{ stats?.total_users }} 人</span>
+                <div class="flex justify-between py-1 border-b border-[var(--kh-border)]">
+                  <span class="text-[var(--kh-text-muted)]">注册总用户数</span>
+                  <span class="font-medium text-[var(--kh-text-soft)]">{{ stats?.total_users }} 人</span>
                 </div>
-                <div class="flex justify-between py-1 border-b border-zinc-100">
-                  <span class="text-zinc-500">当前活跃状态用户</span>
+                <div class="flex justify-between py-1 border-b border-[var(--kh-border)]">
+                  <span class="text-[var(--kh-text-muted)]">当前活跃状态用户</span>
                   <span class="font-medium text-emerald-600">{{ stats?.active_users }} 人</span>
                 </div>
                 <div class="flex justify-between py-1">
-                  <span class="text-zinc-500">累计操作审计流水</span>
-                  <span class="font-medium text-zinc-800">{{ stats?.total_audit_logs }} 条</span>
+                  <span class="text-[var(--kh-text-muted)]">累计操作审计流水</span>
+                  <span class="font-medium text-[var(--kh-text-soft)]">{{ stats?.total_audit_logs }} 条</span>
                 </div>
               </div>
             </div>
 
-            <div class="linear-card p-5 border border-zinc-200">
-              <h4 class="font-semibold text-sm text-zinc-800 mb-3">系统运行架构信息</h4>
+            <div class="linear-card p-5 border border-[var(--kh-border)]">
+              <h4 class="font-semibold text-sm text-[var(--kh-text-soft)] mb-3">系统运行架构信息</h4>
               <div class="space-y-3 text-xs">
-                <div class="flex justify-between py-1 border-b border-zinc-100">
-                  <span class="text-zinc-500">数据库底层</span>
-                  <span class="font-mono text-zinc-800">PostgreSQL 16.x (Docker)</span>
+                <div class="flex justify-between py-1 border-b border-[var(--kh-border)]">
+                  <span class="text-[var(--kh-text-muted)]">数据库底层</span>
+                  <span class="font-mono text-[var(--kh-text-soft)]">PostgreSQL 16.x (Docker)</span>
                 </div>
-                <div class="flex justify-between py-1 border-b border-zinc-100">
-                  <span class="text-zinc-500">全文检索机制</span>
-                  <span class="font-medium text-zinc-800">PostgreSQL 联合检索 + 模块化解耦</span>
+                <div class="flex justify-between py-1 border-b border-[var(--kh-border)]">
+                  <span class="text-[var(--kh-text-muted)]">全文检索机制</span>
+                  <span class="font-medium text-[var(--kh-text-soft)]">PostgreSQL 联合检索 + 模块化解耦</span>
                 </div>
                 <div class="flex justify-between py-1">
-                  <span class="text-zinc-500">Agent API 协议支持</span>
+                  <span class="text-[var(--kh-text-muted)]">Agent API 协议支持</span>
                   <span class="font-mono text-emerald-600">RESTful /api/v1/agent/* (已就绪)</span>
                 </div>
               </div>
@@ -86,7 +86,7 @@
 
             <el-form-item label="本地物理存储路径">
               <el-input v-model="settingsForm.storage_path" disabled class="font-mono text-xs" />
-              <div class="text-[11px] text-zinc-400 mt-1">存储路径由后端系统配置隔离，严格防止路径穿越漏洞</div>
+              <div class="text-[11px] text-[var(--kh-text-dim)] mt-1">存储路径由后端系统配置隔离，严格防止路径穿越漏洞</div>
             </el-form-item>
 
             <el-form-item label="单文件上传大小限制 (MB)">
@@ -102,7 +102,7 @@
                 default-first-option
                 class="w-full"
               />
-              <div class="text-[11px] text-zinc-400 mt-1">支持输入回车自定义扩展名，如 .md, .html, .pdf 等</div>
+              <div class="text-[11px] text-[var(--kh-text-dim)] mt-1">支持输入回车自定义扩展名，如 .md, .html, .pdf 等</div>
             </el-form-item>
 
             <el-button type="primary" class="mt-4" :loading="savingSettings" @click="saveSettings">
@@ -115,7 +115,7 @@
       <!-- 3. 用户管理 -->
       <el-tab-pane label="用户管理" name="users">
         <div class="flex flex-wrap gap-3 justify-between items-center mb-4">
-          <span class="text-xs text-zinc-500">统一管控系统注册账户、账号可用状态与系统分配角色</span>
+          <span class="text-xs text-[var(--kh-text-muted)]">统一管控系统注册账户、账号可用状态与系统分配角色</span>
           <el-button size="small" type="primary" @click="openCreateUserDialog">添加用户</el-button>
         </div>
         <el-table :data="users" class="w-full" stripe>
@@ -150,7 +150,7 @@
 
       <!-- 4. 角色与权限矩阵 (RBAC) -->
       <el-tab-pane label="权限与角色" name="roles">
-        <div class="mb-4 text-xs text-zinc-500">系统内置的标准四级角色权限定义矩阵 (RBAC + Resource ACL)</div>
+        <div class="mb-4 text-xs text-[var(--kh-text-muted)]">系统内置的标准四级角色权限定义矩阵 (RBAC + Resource ACL)</div>
         <el-table :data="rolesMatrix" class="w-full" border>
           <el-table-column prop="role" label="角色标识" width="120" />
           <el-table-column prop="name" label="角色名称" width="140" font-weight="bold" />
@@ -182,7 +182,7 @@
           <el-table-column prop="resource" label="涉及资源" width="160" />
           <el-table-column prop="details" label="动作详细上下文">
             <template #default="{ row }">
-              <span class="font-mono text-[11px] text-zinc-500">{{ JSON.stringify(row.details) }}</span>
+              <span class="font-mono text-[11px] text-[var(--kh-text-muted)]">{{ JSON.stringify(row.details) }}</span>
             </template>
           </el-table-column>
           <el-table-column prop="created_at" label="时间" width="170">
