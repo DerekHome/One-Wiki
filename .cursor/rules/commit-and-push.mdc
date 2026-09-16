@@ -1,0 +1,13 @@
+---
+description: 每次完成工作后必须提交并推送到远端
+alwaysApply: true
+---
+
+# Git 收尾
+
+完成一组改动后必须：
+
+1. 创建 git commit（不要留下未提交的完成态工作）。
+2. 推送到当前分支的远端（`git push`）。
+
+不要等用户再次提醒。用户说「做完」即包含 commit + push。

@@ -40,26 +40,34 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         ).model_dump()
     )
 
+
+def _http_error_response(exc: HTTPException):
+    detail = exc.detail
+    if isinstance(detail, dict):
+        code = detail.get("code", "HTTP_ERROR")
+        msg = detail.get("message", "请求处理失败")
+    else:
+        code = "HTTP_ERROR"
+        msg = str(detail)
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=ResponseModel(
+            success=False,
+            data=None,
+            error={"code": code, "message": msg}
+        ).model_dump()
+    )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return _http_error_response(exc)
+
+
 @app.exception_handler(Exception)
 async def generic_exception_handler(request: Request, exc: Exception):
-    import traceback
-    from fastapi import HTTPException
     if isinstance(exc, HTTPException):
-        detail = exc.detail
-        if isinstance(detail, dict):
-            code = detail.get("code", "HTTP_ERROR")
-            msg = detail.get("message", "请求处理失败")
-        else:
-            code = "HTTP_ERROR"
-            msg = str(detail)
-        return JSONResponse(
-            status_code=exc.status_code,
-            content=ResponseModel(
-                success=False,
-                data=None,
-                error={"code": code, "message": msg}
-            ).model_dump()
-        )
+        return _http_error_response(exc)
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content=ResponseModel(

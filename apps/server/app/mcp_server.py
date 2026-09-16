@@ -1,7 +1,8 @@
 import os
 import sys
-import asyncio
 from typing import Optional, List, Dict, Any
+
+from fastapi import HTTPException
 
 # 将 apps/server 根目录注入系统路径
 SERVER_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -10,158 +11,134 @@ if SERVER_ROOT not in sys.path:
 
 from mcp.server.mcpserver import MCPServer
 from app.models.database import SessionLocal
-from app.models.entities import User
-from app.services.knowledge_service import KnowledgeService
-from app.services.search_service import SearchService
-from app.services.space_service import SpaceService
 from app.core.audit import record_audit_log
+from app.services.agent_knowledge_service import AgentKnowledgeService
 
-# 初始化标准 MCP Server (v2 SDK)
 mcp = MCPServer("KnowledgeCenterMCP")
 
-def get_mcp_context_user(db):
-    # 本地模式默认使用指定管理员或首个活跃管理员身份进行安全鉴权
-    target_username = os.getenv("MCP_AUTH_USER", "admin_master")
-    user = db.query(User).filter(User.username == target_username).first()
-    if not user:
-        user = db.query(User).filter(User.role.in_(["owner", "admin"])).first()
-    if not user:
-        user = db.query(User).first()
-    return user
 
-# ==================== MCP Tools 开放工具定义 ====================
+def _mcp_user(db):
+    return AgentKnowledgeService.resolve_mcp_user(db, os.getenv("MCP_AUTH_USER"))
+
+
+def _http_error_payload(exc: HTTPException):
+    detail = exc.detail
+    if isinstance(detail, dict):
+        return {"error": detail.get("message", "请求失败"), "code": detail.get("code", "HTTP_ERROR")}
+    return {"error": str(detail), "code": "HTTP_ERROR"}
+
+
+def _with_db(handler):
+    db = SessionLocal()
+    try:
+        return handler(db)
+    except HTTPException as exc:
+        return _http_error_payload(exc)
+    finally:
+        db.close()
+
 
 @mcp.tool(
     name="search_knowledge",
-    description="在企业知识中心中执行全文联合检索，检索标题、正文及摘要高亮切片，带严格权限过滤。"
+    description="在企业知识中心中检索已发布知识，返回可引用切片，带严格权限过滤。"
 )
 def search_knowledge(query: str, space_id: Optional[int] = None, limit: int = 10) -> List[Dict[str, Any]]:
-    db = SessionLocal()
-    try:
-        user = get_mcp_context_user(db)
-        if not user:
-            return [{"error": "未找到有效 MCP 执行身份"}]
-        results = SearchService.search(
-            db=db,
-            query_str=query,
-            user=user,
-            space_id=space_id,
-            page=1,
-            page_size=limit
-        )
+    def run(db):
+        user = _mcp_user(db)
+        results = AgentKnowledgeService.search(db, user, query, space_id=space_id, limit=limit)
         record_audit_log(db, action="mcp_search_knowledge", resource="mcp_server", user_id=user.id, username=user.username, details={"query": query})
-        return results.get("items", [])
-    finally:
-        db.close()
+        return results
+
+    result = _with_db(run)
+    return result if isinstance(result, list) else [result]
+
 
 @mcp.tool(
     name="get_knowledge",
-    description="根据知识 ID 获取指定知识对象的详细信息、元数据及正文内容。"
+    description="根据知识 ID 获取已发布知识的正文、版本号、标签与引用 URI。"
 )
 def get_knowledge(knowledge_id: int) -> Dict[str, Any]:
-    db = SessionLocal()
-    try:
-        user = get_mcp_context_user(db)
-        k = KnowledgeService.get_knowledge(db, knowledge_id)
-        record_audit_log(db, action="mcp_get_knowledge", resource=f"knowledge:{knowledge_id}", user_id=user.id if user else None, username=user.username if user else "mcp")
-        return {
-            "id": k.id,
-            "space_id": k.space_id,
-            "title": k.title,
-            "content": k.content,
-            "summary": k.summary,
-            "content_type": k.content_type,
-            "version": k.current_version_id,
-            "tags": KnowledgeService._get_tags(db, k.id),
-            "updated_at": str(k.updated_at)
-        }
-    except Exception as e:
-        return {"error": str(e)}
-    finally:
-        db.close()
+    def run(db):
+        user = _mcp_user(db)
+        payload = AgentKnowledgeService.get_knowledge(db, knowledge_id, user)
+        record_audit_log(db, action="mcp_get_knowledge", resource=f"knowledge:{knowledge_id}", user_id=user.id, username=user.username)
+        return payload
+
+    return _with_db(run)
+
 
 @mcp.tool(
     name="get_latest_knowledge",
-    description="根据知识 ID 查询其最新生效版本的完整正文与快照说明。"
+    description="根据知识 ID 读取当前已发布版本快照正文，而不是未治理的草稿。"
 )
 def get_latest_knowledge(knowledge_id: int) -> Dict[str, Any]:
-    db = SessionLocal()
-    try:
-        user = get_mcp_context_user(db)
-        k = KnowledgeService.get_knowledge(db, knowledge_id)
-        v = KnowledgeService.get_version(db, knowledge_id, k.current_version_id or 1)
-        record_audit_log(db, action="mcp_get_latest_knowledge", resource=f"knowledge:{knowledge_id}", user_id=user.id if user else None, username=user.username if user else "mcp")
-        return {
-            "knowledge_id": k.id,
-            "title": v.title,
-            "content": v.content,
-            "version_number": v.version_number,
-            "change_summary": v.change_summary,
-            "created_at": str(v.created_at)
-        }
-    except Exception as e:
-        return {"error": str(e)}
-    finally:
-        db.close()
+    def run(db):
+        user = _mcp_user(db)
+        payload = AgentKnowledgeService.get_latest_knowledge(db, knowledge_id, user)
+        record_audit_log(db, action="mcp_get_latest_knowledge", resource=f"knowledge:{knowledge_id}", user_id=user.id, username=user.username)
+        return payload
+
+    return _with_db(run)
+
 
 @mcp.tool(
     name="list_spaces",
-    description="列出当前企业知识中心内当前身份有权访问的所有知识空间。"
+    description="列出当前 MCP 身份有权访问的知识空间。"
 )
 def list_spaces() -> List[Dict[str, Any]]:
-    db = SessionLocal()
-    try:
-        user = get_mcp_context_user(db)
-        if not user:
-            return []
-        spaces = SpaceService.list_spaces_for_user(db, user)
+    def run(db):
+        user = _mcp_user(db)
+        spaces = AgentKnowledgeService.list_spaces(db, user)
         record_audit_log(db, action="mcp_list_spaces", resource="mcp_server", user_id=user.id, username=user.username)
-        return [{"id": s.id, "name": s.name, "description": s.description, "visibility": s.visibility} for s in spaces]
-    finally:
-        db.close()
+        return spaces
+
+    result = _with_db(run)
+    return result if isinstance(result, list) else [result]
+
 
 @mcp.tool(
     name="get_related_knowledge",
-    description="根据指定的知识 ID，获取同一知识空间内的相关联文档建议列表。"
+    description="获取同一空间内已发布且当前身份可见的关联知识（优先同专题/同标签）。"
 )
 def get_related_knowledge(knowledge_id: int) -> List[Dict[str, Any]]:
-    db = SessionLocal()
-    try:
-        k = KnowledgeService.get_knowledge(db, knowledge_id)
-        from app.models.entities import Knowledge
-        related = db.query(Knowledge).filter(
-            Knowledge.space_id == k.space_id,
-            Knowledge.id != k.id,
-            Knowledge.is_deleted == False
-        ).limit(5).all()
-        return [{"id": r.id, "title": r.title, "summary": r.summary} for r in related]
-    finally:
-        db.close()
+    def run(db):
+        user = _mcp_user(db)
+        related = AgentKnowledgeService.list_related(db, knowledge_id, user)
+        record_audit_log(db, action="mcp_get_related", resource=f"knowledge:{knowledge_id}", user_id=user.id, username=user.username)
+        return related
 
-# ==================== MCP Resources 资源 URI 接口 ====================
+    result = _with_db(run)
+    return result if isinstance(result, list) else [result]
+
 
 @mcp.resource("knowledge://{knowledge_id}")
 def read_knowledge_resource(knowledge_id: int) -> str:
-    """直接通过标准 Resource URI 协议读取知识正文"""
-    db = SessionLocal()
-    try:
-        k = KnowledgeService.get_knowledge(db, knowledge_id)
-        return f"# {k.title}\n\n{k.content}"
-    finally:
-        db.close()
+    def run(db):
+        user = _mcp_user(db)
+        payload = AgentKnowledgeService.get_knowledge(db, knowledge_id, user)
+        record_audit_log(db, action="mcp_read_resource", resource=f"knowledge:{knowledge_id}", user_id=user.id, username=user.username)
+        return f"# {payload['title']}\n\n{payload['content']}"
+
+    result = _with_db(run)
+    if isinstance(result, dict) and result.get("error"):
+        return f"无法读取知识: {result['error']}"
+    return result
+
 
 @mcp.resource("knowledge://space/{space_id}")
 def read_space_resource(space_id: int) -> str:
-    """直接通过标准 Resource URI 协议读取指定空间名下的知识目录概览"""
-    db = SessionLocal()
-    try:
-        from app.models.entities import Knowledge
-        docs = db.query(Knowledge).filter(Knowledge.space_id == space_id, Knowledge.is_deleted == False).all()
-        lines = [f"- [#{d.id}] {d.title} (v{d.current_version_id or 1})" for d in docs]
-        return "\n".join(lines) if lines else "该空间下暂无文档"
-    finally:
-        db.close()
+    def run(db):
+        user = _mcp_user(db)
+        docs = AgentKnowledgeService.list_published_in_space(db, space_id, user)
+        record_audit_log(db, action="mcp_read_space_resource", resource=f"space:{space_id}", user_id=user.id, username=user.username)
+        lines = [f"- [#{d.id}] {d.title} ({AgentKnowledgeService.citation_uri(d.id)})" for d in docs]
+        return "\n".join(lines) if lines else "该空间下暂无已发布知识"
+
+    result = _with_db(run)
+    if isinstance(result, dict) and result.get("error"):
+        return f"无法读取空间: {result['error']}"
+    return result
+
 
 if __name__ == "__main__":
-    # 本地 STDIO 模式运行
     mcp.run()
