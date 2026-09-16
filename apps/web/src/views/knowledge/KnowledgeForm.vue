@@ -34,9 +34,14 @@
           <span>支持将本地 .md / .html 文件直接拖拽至此页面自动填充</span>
         </span>
       </div>
-      <el-button type="primary" size="large" :loading="saving" @click="saveKnowledge">
-        {{ isEdit ? '更新发布新版本' : '正式发布' }}
-      </el-button>
+      <div class="flex items-center gap-2">
+        <el-button size="large" :loading="saving" @click="saveKnowledge('draft')">
+          {{ isEdit ? '保存草稿' : '存为草稿' }}
+        </el-button>
+        <el-button type="primary" size="large" :loading="saving" @click="saveKnowledge('published')">
+          {{ isEdit ? '更新并发布' : '正式发布' }}
+        </el-button>
+      </div>
     </div>
 
     <div class="metric-card p-5 lg:p-8 mb-4 relative" :class="{ 'border-[var(--kh-primary)] bg-[var(--kh-primary-soft)]': isDragging }">
@@ -99,7 +104,7 @@
         </el-form-item>
         <div class="flex flex-wrap justify-between gap-2 text-xs text-[var(--kh-text-muted)]" aria-live="polite">
           <span>支持 Markdown / HTML，也可拖入本地文件</span>
-          <span>{{ form.content.length.toLocaleString() }} 字符 · {{ saving ? '正在保存…' : '点击发布后保存' }}</span>
+          <span>{{ form.content.length.toLocaleString() }} 字符 · {{ saving ? '正在保存…' : '草稿不对智能体开放，发布后才可被 Agent 引用' }}</span>
         </div>
       </el-form>
     </div>
@@ -128,9 +133,11 @@ const form = ref({
   title: '',
   content: '',
   space_id: defaultSpaceId,
+  topic_id: route.query.topic_id ? Number(route.query.topic_id) : null,
   knowledge_type: 'article',
   tags: [] as string[],
-  change_summary: ''
+  change_summary: '',
+  status: 'published'
 })
 
 let dragCounter = 0
@@ -220,16 +227,18 @@ async function fetchKnowledge() {
       title: k.title,
       content: k.content,
       space_id: k.space_id,
+      topic_id: k.topic_id || null,
       knowledge_type: k.knowledge_type,
       tags: k.tags || [],
-      change_summary: ''
+      change_summary: '',
+      status: k.status || 'published'
     }
   } finally {
     loading.value = false
   }
 }
 
-async function saveKnowledge() {
+async function saveKnowledge(nextStatus: 'draft' | 'published' = 'published') {
   if (!form.value.title.trim()) {
     ElMessage.warning('知识标题不能为空')
     return
@@ -245,13 +254,14 @@ async function saveKnowledge() {
 
   saving.value = true
   try {
+    const payload = { ...form.value, status: nextStatus }
     if (isEdit.value) {
-      await apiClient.put(`/knowledge/${knowledgeId}`, form.value)
-      ElMessage.success('更新成功，已自动生成新版本快照')
+      await apiClient.put(`/knowledge/${knowledgeId}`, payload)
+      ElMessage.success(nextStatus === 'published' ? '已发布，智能体可引用最新版本' : '草稿已保存，智能体不可见')
       router.push(`/knowledge/${knowledgeId}`)
     } else {
-      const res: any = await apiClient.post('/knowledge/', form.value)
-      ElMessage.success('发布成功，已生成首发版本 v1')
+      const res: any = await apiClient.post('/knowledge/', payload)
+      ElMessage.success(nextStatus === 'published' ? '已发布并生成 v1' : '草稿已保存')
       router.push(`/knowledge/${res.data.id}`)
     }
   } finally {

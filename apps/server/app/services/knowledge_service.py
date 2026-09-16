@@ -59,17 +59,26 @@ class KnowledgeService:
         return [t[0] for t in tags]
 
     @staticmethod
+    def _normalize_status(status: Optional[str], default: str = "published") -> str:
+        value = (status or default).strip().lower()
+        if value not in {"draft", "published", "archived"}:
+            raise HTTPException(status_code=400, detail={"code": "INVALID_STATUS", "message": "知识状态仅支持 draft、published、archived"})
+        return value
+
+    @staticmethod
     def create_knowledge(db: Session, data: KnowledgeCreate, user: User) -> Knowledge:
+        status = KnowledgeService._normalize_status(data.status, "published")
         k = Knowledge(
             space_id=data.space_id,
+            topic_id=data.topic_id,
             title=data.title,
             content=data.content,
             summary=data.summary or (data.content[:150] + "..." if len(data.content) > 150 else data.content),
             knowledge_type=data.knowledge_type or "article",
-            status="published",
+            status=status,
             owner_id=user.id,
             is_deleted=False,
-            published_at=datetime.now(timezone.utc)
+            published_at=datetime.now(timezone.utc) if status == "published" else None
         )
         db.add(k)
         db.flush()
@@ -78,7 +87,7 @@ class KnowledgeService:
             version_number=1,
             title=k.title,
             content=k.content,
-            change_summary="初始创建并发布",
+            change_summary="初始创建并发布" if status == "published" else "保存草稿",
             created_by=user.id
         )
         db.add(v1)
@@ -198,8 +207,15 @@ class KnowledgeService:
             k.summary = data.summary
         if data.knowledge_type is not None:
             k.knowledge_type = data.knowledge_type
+        if data.topic_id is not None:
+            k.topic_id = data.topic_id
         if data.tags is not None:
             KnowledgeService._sync_tags(db, k.id, data.tags)
+        if data.status is not None:
+            next_status = KnowledgeService._normalize_status(data.status, k.status)
+            k.status = next_status
+            if next_status == "published" and k.published_at is None:
+                k.published_at = datetime.now(timezone.utc)
 
         if has_content_change:
             current_max = db.query(KnowledgeVersion.version_number).filter(KnowledgeVersion.knowledge_id == k.id).order_by(KnowledgeVersion.version_number.desc()).first()

@@ -4,7 +4,7 @@ import hmac
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 from jose import jwt, JWTError
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from app.core.config import settings
@@ -59,17 +59,24 @@ def get_current_user_optional(
     db: Session = Depends(get_db)
 ):
     from app.models.entities import User
+    from app.services.agent_key_service import KEY_PREFIX, AgentKeyService
+
     token = token_bearer.credentials if token_bearer else token_oauth
     if not token:
         return None
+    if token.startswith(KEY_PREFIX):
+        return AgentKeyService.authenticate(db, token)
     payload = decode_access_token(token)
     if not payload or "sub" not in payload:
         return None
     username = payload.get("sub")
     user = db.query(User).filter(User.username == username).first()
+    if user:
+        user.actor_type = "human"
     return user
 
 def get_current_user(
+    request: Request,
     current_user = Depends(get_current_user_optional)
 ):
     if not current_user:
@@ -83,4 +90,11 @@ def get_current_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={"code": "USER_INACTIVE", "message": "账户已被禁用"}
         )
+    if getattr(current_user, "actor_type", None) == "agent":
+        path = request.url.path.rstrip("/")
+        if path != "/api/v1/agent" and not path.startswith("/api/v1/agent/"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={"code": "AGENT_READ_ONLY", "message": "Agent 凭证只能调用 /api/v1/agent 只读知识接口"},
+            )
     return current_user

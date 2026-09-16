@@ -27,13 +27,13 @@
 
 - **知识空间**：创建空间并设置 public、internal 或 private 可见性。
 - **权限管理**：系统角色与空间角色分离，支持 owner、admin、editor、viewer。
-- **知识管理**：创建、编辑、发布、软删除、版本对比与历史版本恢复。
+- **知识管理**：草稿、发布、归档；版本对比与历史恢复。草稿/归档不对智能体开放。
 - **内容导入**：支持 Markdown / HTML 导入，自动提取标题与摘要。
 - **附件管理**：上传、下载、删除；独立存储标识避免同名覆盖。
-- **全文检索**：按标题、正文、摘要、空间与标签检索已发布知识。
+- **关键词检索**：按标题、正文、摘要、空间、专题与标签检索已发布知识。
 - **模块系统**：搜索等模块的启用、停用与配置。
-- **Agent / AI 入口**：Agent API 与 MCP，供智能体检索空间、知识正文、版本、关联内容；与 Web 共用权限。
-- **审计日志**：登录、知识、空间、成员、附件与 Agent 操作记录。
+- **Agent / AI 入口**：独立 API Key、Agent REST、MCP；返回已发布版本快照与 `knowledge://{id}` 引用。
+- **审计日志**：登录、知识、空间、成员、附件与 Agent 操作记录（人和 Agent 可区分）。
 
 ## 技术栈
 
@@ -179,6 +179,23 @@ One-Wiki/                    # 本仓库（Knowledge Center Monorepo）
 | `CORS_ORIGINS` | 允许的前端来源（逗号分隔） | `http://localhost:3000` |
 | `VITE_API_BASE_URL` | 前端 API 前缀 | `/api/v1` |
 | `VITE_API_PROXY_TARGET` | Vite 开发代理目标 | `http://localhost:8000` |
+| `MCP_AUTH_USER` | MCP 进程使用的系统用户名（禁止回落管理员） | `admin` |
+| `MCP_API_KEY` | MCP 优先使用的 Agent API Key（`kck_` 开头） | 系统配置中签发 |
+
+## Agent 接入
+
+智能体不要借用员工登录密码。在 **系统配置 → Agent 凭证** 签发 Key：
+
+```http
+Authorization: Bearer kck_...
+GET /api/v1/agent/search?q=出差报销
+GET /api/v1/agent/knowledge/{id}/latest
+```
+
+- Key 只能访问 `/api/v1/agent/*`，不能写知识、不能管用户。
+- 可绑定单个空间；不绑定则沿用签发人可见范围。
+- 只返回 **已发布** 最新版本，载荷含 `citation_uri`（如 `knowledge://12`）、专题、标签。
+- MCP 设置 `MCP_API_KEY`，或退而使用 `MCP_AUTH_USER`；两者都缺则拒绝启动式回落到管理员。
 
 ## 常见问题
 

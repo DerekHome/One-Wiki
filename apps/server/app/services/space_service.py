@@ -28,12 +28,17 @@ class SpaceService:
     @staticmethod
     def list_spaces_for_user(db: Session, user: User) -> List[Space]:
         if user.role in ["owner", "admin"]:
-            return db.query(Space).filter(Space.is_deleted == False).all()
-        my_space_ids = [m.space_id for m in db.query(SpaceMember.space_id).filter(SpaceMember.user_id == user.id).all()]
-        return db.query(Space).filter(
-            Space.is_deleted == False,
-            (Space.visibility.in_(["public", "internal"])) | (Space.id.in_(my_space_ids))
-        ).all()
+            spaces = db.query(Space).filter(Space.is_deleted == False).all()
+        else:
+            my_space_ids = [m.space_id for m in db.query(SpaceMember.space_id).filter(SpaceMember.user_id == user.id).all()]
+            spaces = db.query(Space).filter(
+                Space.is_deleted == False,
+                (Space.visibility.in_(["public", "internal"])) | (Space.id.in_(my_space_ids))
+            ).all()
+        limit = getattr(user, "agent_space_id", None)
+        if limit is None:
+            return spaces
+        return [space for space in spaces if space.id == limit]
 
     @staticmethod
     def get_space(db: Session, space_id: int) -> Space:

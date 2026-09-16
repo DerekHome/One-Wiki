@@ -36,9 +36,9 @@ class ModuleRegistry:
     def _register_default_modules(self):
         search_mod = BaseModule(ModuleManifest(
             id="search",
-            name="PostgreSQL Full Text Search",
+            name="Keyword Search",
             version="1.0.0",
-            description="基于 PostgreSQL 联合模糊/全文检索",
+            description="基于标题、摘要与正文的关键词检索（不依赖大模型）",
             extension_point="search_provider"
         ))
         file_mod = BaseModule(ModuleManifest(

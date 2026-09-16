@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 
 from app.core.permissions import can_access_knowledge
 from app.models.entities import Knowledge, KnowledgeTag, KnowledgeVersion, User
+from app.services.agent_key_service import KEY_PREFIX, AgentKeyService
+from app.services.attachment_service import AttachmentService
 from app.services.knowledge_service import KnowledgeService
 from app.services.search_service import SearchService
 from app.services.space_service import SpaceService
@@ -44,7 +46,20 @@ class AgentKnowledgeService:
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail={"code": "MCP_AUTH_INVALID", "message": "MCP 执行身份不存在或已停用"},
             )
+        user.actor_type = "human"
         return user
+
+    @staticmethod
+    def resolve_mcp_principal(db: Session, username: Optional[str] = None, api_key: Optional[str] = None) -> User:
+        raw_key = (api_key or "").strip()
+        if raw_key:
+            if not raw_key.startswith(KEY_PREFIX):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail={"code": "MCP_AUTH_INVALID", "message": "MCP_API_KEY 格式无效"},
+                )
+            return AgentKeyService.authenticate(db, raw_key)
+        return AgentKnowledgeService.resolve_mcp_user(db, username)
 
     @staticmethod
     def get_current_version(db: Session, knowledge: Knowledge) -> Optional[KnowledgeVersion]:
@@ -220,6 +235,42 @@ class AgentKnowledgeService:
         return [doc for doc in docs if AgentKnowledgeService.is_agent_visible(doc)]
 
     @staticmethod
+    def list_topics(db: Session, space_id: int, user: User) -> List[Dict[str, Any]]:
+        spaces = AgentKnowledgeService.list_spaces(db, user)
+        if not any(space["id"] == space_id for space in spaces):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={"code": "PERMISSION_DENIED", "message": "无权访问该知识空间"},
+            )
+        topics = TopicService.list_topics_by_space(db, space_id)
+        return [
+            {
+                "id": topic.id,
+                "space_id": topic.space_id,
+                "name": topic.name,
+                "description": topic.description,
+                "sort_order": topic.sort_order,
+            }
+            for topic in topics
+        ]
+
+    @staticmethod
+    def list_attachments(db: Session, knowledge_id: int, user: User) -> List[Dict[str, Any]]:
+        knowledge = AgentKnowledgeService.require_readable(db, knowledge_id, user)
+        attachments = AttachmentService.list_attachments(db, knowledge.id)
+        return [
+            {
+                "id": item.id,
+                "filename": item.filename,
+                "mime_type": item.mime_type,
+                "size": item.size,
+                "knowledge_id": knowledge.id,
+                "citation_uri": AgentKnowledgeService.citation_uri(knowledge.id),
+            }
+            for item in attachments
+        ]
+
+    @staticmethod
     def search(
         db: Session,
         user: User,
@@ -227,6 +278,7 @@ class AgentKnowledgeService:
         *,
         space_id: Optional[int] = None,
         knowledge_type: Optional[str] = None,
+        topic_id: Optional[int] = None,
         limit: int = 10,
     ) -> List[Dict[str, Any]]:
         from app.core.modules.registry import module_registry
@@ -243,6 +295,7 @@ class AgentKnowledgeService:
             user=user,
             space_id=space_id,
             knowledge_type=knowledge_type,
+            topic_id=topic_id,
             page=1,
             page_size=limit,
         )

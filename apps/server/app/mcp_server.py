@@ -18,7 +18,11 @@ mcp = MCPServer("KnowledgeCenterMCP")
 
 
 def _mcp_user(db):
-    return AgentKnowledgeService.resolve_mcp_user(db, os.getenv("MCP_AUTH_USER"))
+    return AgentKnowledgeService.resolve_mcp_principal(
+        db,
+        username=os.getenv("MCP_AUTH_USER"),
+        api_key=os.getenv("MCP_API_KEY"),
+    )
 
 
 def _http_error_payload(exc: HTTPException):

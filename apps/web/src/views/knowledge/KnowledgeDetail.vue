@@ -14,7 +14,10 @@
           </button>
           <div class="flex items-center gap-2">
             <span class="kh-chip">
-              v{{ knowledge?.current_version_id || 1 }}
+              {{ statusLabel }}
+            </span>
+            <span class="kh-chip">
+              v{{ currentVersionNumber }}
             </span>
             <span class="text-[var(--kh-text-dim)]">·</span>
             <span>更新于 {{ formatDate(knowledge?.updated_at) }}</span>
@@ -33,6 +36,20 @@
               </h1>
             </div>
             <div class="hidden sm:flex items-center gap-2 shrink-0">
+              <button
+                v-if="knowledge?.status !== 'published'"
+                @click="setStatus('published')"
+                class="app-button app-button-primary px-3.5 py-2"
+              >
+                发布给员工与智能体
+              </button>
+              <button
+                v-else
+                @click="setStatus('archived')"
+                class="app-button app-button-ghost px-3.5 py-2"
+              >
+                归档
+              </button>
               <button @click="goToEdit" class="app-button app-button-primary px-3.5 py-2">
                 <el-icon :size="14"><EditPen /></el-icon>
                 <span>编辑</span>
@@ -81,7 +98,7 @@
 
         <!-- 底部元数据与快捷操作 -->
         <div class="mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-xs text-[var(--kh-text-muted)]">
-          <div>知识唯一标识: <span class="font-mono text-[var(--kh-text-soft)]">#{{ knowledge?.id }}</span></div>
+          <div>引用 URI: <span class="font-mono text-[var(--kh-text-soft)]">knowledge://{{ knowledge?.id }}</span></div>
           <div class="flex items-center gap-3">
             <button @click="goToEdit" class="text-[var(--kh-primary)] hover:text-[#8cc5ff] font-semibold transition-colors">编辑此文档</button>
             <button @click="handleDelete" class="text-rose-500 hover:text-rose-700 font-medium transition-colors">删除文档</button>
@@ -184,6 +201,14 @@ const versions = ref<any[]>([])
 const attachments = ref<any[]>([])
 const loading = ref(false)
 
+const currentVersionNumber = computed(() => versions.value[0]?.version_number || 1)
+const statusLabel = computed(() => {
+  const status = knowledge.value?.status
+  if (status === 'draft') return '草稿 · 仅员工可见'
+  if (status === 'archived') return '已归档 · 不对智能体开放'
+  return '已发布 · 员工与智能体共用'
+})
+
 // 配置 marked 解析规则
 marked.setOptions({
   gfm: true,
@@ -250,6 +275,12 @@ async function restoreVersion(versionNum: number) {
     ElMessage.success('历史版本恢复成功')
     fetchKnowledge()
   } catch {}
+}
+
+async function setStatus(status: 'published' | 'archived' | 'draft') {
+  await apiClient.put(`/knowledge/${knowledgeId}`, { status })
+  ElMessage.success(status === 'published' ? '已发布，智能体可引用' : '已归档，智能体不可见')
+  fetchKnowledge()
 }
 
 async function handleDelete() {

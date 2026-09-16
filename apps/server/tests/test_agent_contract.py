@@ -124,3 +124,67 @@ def test_mcp_identity_refuses_admin_fallback(db_session):
 
     user = AgentKnowledgeService.resolve_mcp_user(db_session, "admin_test")
     assert user.username == "admin_test"
+
+
+def test_draft_is_hidden_until_published():
+    admin = auth_headers("admin_test", "password123")
+    space_id = client.post("/api/v1/spaces/", json={"name": "draft-space", "visibility": "private"}, headers=admin).json()["data"]["id"]
+    created = client.post("/api/v1/knowledge/", json={
+        "space_id": space_id,
+        "title": "draft-doc",
+        "content": "not for agents yet",
+        "status": "draft",
+    }, headers=admin)
+    assert created.status_code == 200
+    knowledge_id = created.json()["data"]["id"]
+    assert created.json()["data"]["status"] == "draft"
+
+    listed = client.get(f"/api/v1/knowledge/?space_id={space_id}", headers=admin).json()["data"]
+    assert any(item["id"] == knowledge_id for item in listed)
+
+    hidden = client.get(f"/api/v1/agent/knowledge/{knowledge_id}/latest", headers=admin)
+    assert hidden.status_code == 404
+
+    published = client.put(f"/api/v1/knowledge/{knowledge_id}", json={"status": "published"}, headers=admin)
+    assert published.status_code == 200
+    visible = client.get(f"/api/v1/agent/knowledge/{knowledge_id}/latest", headers=admin)
+    assert visible.status_code == 200
+    assert visible.json()["data"]["citation_uri"] == f"knowledge://{knowledge_id}"
+
+
+def test_agent_api_key_is_read_only_and_space_scoped():
+    admin = auth_headers("admin_test", "password123")
+    space_a, knowledge_a = _seed_published(admin, title="key-space-a", content="alpha")
+    space_b, knowledge_b = _seed_published(admin, title="key-space-b", content="beta")
+
+    created = client.post("/api/v1/agent-keys/", json={"name": "bot-a", "space_id": space_a}, headers=admin)
+    assert created.status_code == 200
+    raw_key = created.json()["data"]["api_key"]
+    assert raw_key.startswith("kck_")
+    agent_headers = {"Authorization": f"Bearer {raw_key}"}
+
+    allowed = client.get(f"/api/v1/agent/knowledge/{knowledge_a}/latest", headers=agent_headers)
+    assert allowed.status_code == 200
+    denied = client.get(f"/api/v1/agent/knowledge/{knowledge_b}/latest", headers=agent_headers)
+    assert denied.status_code == 403
+
+    write_blocked = client.post("/api/v1/knowledge/", json={
+        "space_id": space_a,
+        "title": "agent-write",
+        "content": "should fail",
+    }, headers=agent_headers)
+    assert write_blocked.status_code == 403
+    assert write_blocked.json()["error"]["code"] == "AGENT_READ_ONLY"
+
+    topics = client.get(f"/api/v1/agent/spaces/{space_a}/topics", headers=agent_headers)
+    assert topics.status_code == 200
+    attachments = client.get(f"/api/v1/agent/knowledge/{knowledge_a}/attachments", headers=agent_headers)
+    assert attachments.status_code == 200
+
+
+def test_mcp_prefers_api_key_identity(db_session):
+    admin = auth_headers("admin_test", "password123")
+    created = client.post("/api/v1/agent-keys/", json={"name": "mcp-bot"}, headers=admin).json()["data"]
+    user = AgentKnowledgeService.resolve_mcp_principal(db_session, username="ignored", api_key=created["api_key"])
+    assert user.actor_type == "agent"
+    assert user.agent_key_name == "mcp-bot"

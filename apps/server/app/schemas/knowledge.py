@@ -10,6 +10,7 @@ class KnowledgeCreate(BaseModel):
     summary: Optional[str] = None
     knowledge_type: Optional[str] = "article"
     tags: Optional[List[str]] = []
+    status: Optional[str] = "published"
 
 class KnowledgeUpdate(BaseModel):
     title: Optional[str] = None
@@ -19,6 +20,7 @@ class KnowledgeUpdate(BaseModel):
     knowledge_type: Optional[str] = None
     tags: Optional[List[str]] = None
     change_summary: Optional[str] = None
+    status: Optional[str] = None
 
 class KnowledgeVersionResponse(BaseModel):
     id: int

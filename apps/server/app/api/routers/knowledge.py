@@ -15,13 +15,25 @@ router = APIRouter()
 @router.get("/", response_model=ResponseModel[List[KnowledgeResponse]])
 def list_knowledge(
     space_id: Optional[int] = None,
+    status: Optional[str] = Query(None, description="draft / published / archived；空则按权限返回"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    query = db.query(Knowledge).filter(Knowledge.is_deleted == False, Knowledge.status == "published")
+    query = db.query(Knowledge).filter(Knowledge.is_deleted == False)
     if space_id:
         check_space_permission(db, space_id, current_user, "viewer")
         query = query.filter(Knowledge.space_id == space_id)
+        from app.core.permissions import get_space_role, ROLE_LEVELS
+        space_role = get_space_role(db, space_id, current_user)
+        can_see_drafts = ROLE_LEVELS.get(space_role, 0) >= ROLE_LEVELS["editor"] or current_user.role in ["owner", "admin"]
+        if status:
+            query = query.filter(Knowledge.status == status)
+        elif not can_see_drafts:
+            query = query.filter(Knowledge.status == "published")
+    else:
+        query = query.filter(Knowledge.status == "published")
+        if status:
+            query = query.filter(Knowledge.status == status)
     items = query.order_by(Knowledge.updated_at.desc()).all()
     results = []
     for k in items:

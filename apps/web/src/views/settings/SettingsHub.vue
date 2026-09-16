@@ -61,16 +61,52 @@
                 </div>
                 <div class="flex justify-between py-1 border-b border-[var(--kh-border)]">
                   <span class="text-[var(--kh-text-muted)]">全文检索机制</span>
-                  <span class="font-medium text-[var(--kh-text-soft)]">PostgreSQL 联合检索 + 模块化解耦</span>
+                  <span class="font-medium text-[var(--kh-text-soft)]">关键词检索（标题 / 摘要 / 正文）</span>
                 </div>
                 <div class="flex justify-between py-1">
-                  <span class="text-[var(--kh-text-muted)]">Agent API 协议支持</span>
-                  <span class="font-mono text-emerald-600">RESTful /api/v1/agent/* (已就绪)</span>
+                  <span class="text-[var(--kh-text-muted)]">Agent 接入</span>
+                  <span class="font-mono text-emerald-600">REST /api/v1/agent + API Key</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </el-tab-pane>
+
+      <el-tab-pane label="Agent 凭证" name="agent-keys">
+        <div class="flex flex-wrap gap-3 justify-between items-center mb-4">
+          <span class="text-xs text-[var(--kh-text-muted)]">给智能体签发独立 API Key。Key 只能读 /api/v1/agent，可选绑定一个空间。明文只显示一次。</span>
+          <el-button size="small" type="primary" @click="openCreateKeyDialog">签发 Key</el-button>
+        </div>
+        <el-alert
+          v-if="createdApiKey"
+          type="success"
+          :closable="false"
+          class="mb-4"
+          title="请立即复制并妥善保存，关闭后无法再查看明文"
+        />
+        <el-input v-if="createdApiKey" :model-value="createdApiKey" readonly class="mb-4 font-mono" />
+        <el-table :data="agentKeys" class="w-full" stripe>
+          <el-table-column prop="name" label="名称" />
+          <el-table-column prop="key_prefix" label="前缀" width="140">
+            <template #default="{ row }">
+              <span class="font-mono text-xs">{{ row.key_prefix }}…</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="空间范围" width="140">
+            <template #default="{ row }">{{ row.space_id ? `空间 #${row.space_id}` : '授权范围内全部' }}</template>
+          </el-table-column>
+          <el-table-column label="状态" width="100">
+            <template #default="{ row }">
+              <el-tag size="small" :type="row.is_active ? 'success' : 'info'">{{ row.is_active ? '有效' : '已撤销' }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="120" align="right">
+            <template #default="{ row }">
+              <el-button v-if="row.is_active" link size="small" type="danger" @click="revokeKey(row.id)">撤销</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
       </el-tab-pane>
 
       <!-- 2. 存储与文件配置 -->
@@ -236,6 +272,21 @@
         <el-button @click="createUserDialog = false">取消</el-button>
         <el-button type="primary" @click="submitCreateUser">确定添加</el-button>
       </template>
+    <el-dialog v-model="createKeyDialog" title="签发 Agent API Key" width="min(440px, calc(100vw - 32px))">
+      <el-form :model="keyForm" label-position="top">
+        <el-form-item label="名称" required>
+          <el-input v-model="keyForm.name" placeholder="例如：客服机器人" />
+        </el-form-item>
+        <el-form-item label="限定知识空间（可选）">
+          <el-select v-model="keyForm.space_id" clearable placeholder="不选则使用签发人可见的全部空间" class="w-full">
+            <el-option v-for="s in keySpaces" :key="s.id" :label="s.name" :value="s.id" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="createKeyDialog = false">取消</el-button>
+        <el-button type="primary" @click="submitCreateKey">签发</el-button>
+      </template>
     </el-dialog>
   </div>
 </template>
@@ -267,6 +318,12 @@ const rolesMatrix = ref<any[]>([])
 // 5. 审计日志
 const auditLogs = ref<any[]>([])
 const auditActionFilter = ref('')
+
+const agentKeys = ref<any[]>([])
+const createdApiKey = ref('')
+const createKeyDialog = ref(false)
+const keySpaces = ref<any[]>([])
+const keyForm = ref<{ name: string; space_id: number | null }>({ name: '', space_id: null })
 
 async function fetchStats() {
   loadingStats.value = true
@@ -335,6 +392,43 @@ async function fetchAuditLogs() {
   auditLogs.value = res.data?.items || []
 }
 
+async function fetchAgentKeys() {
+  const res: any = await apiClient.get('/agent-keys/')
+  agentKeys.value = res.data || []
+}
+
+function openCreateKeyDialog() {
+  createdApiKey.value = ''
+  keyForm.value = { name: '', space_id: null }
+  createKeyDialog.value = true
+}
+
+async function submitCreateKey() {
+  if (!keyForm.value.name.trim()) {
+    ElMessage.warning('请填写名称')
+    return
+  }
+  const res: any = await apiClient.post('/agent-keys/', {
+    name: keyForm.value.name.trim(),
+    space_id: keyForm.value.space_id || null
+  })
+  createdApiKey.value = res.data?.api_key || ''
+  createKeyDialog.value = false
+  ElMessage.success('Key 已签发，请立即复制明文')
+  fetchAgentKeys()
+}
+
+async function revokeKey(id: number) {
+  await apiClient.delete(`/agent-keys/${id}`)
+  ElMessage.success('已撤销')
+  fetchAgentKeys()
+}
+
+async function fetchKeySpaces() {
+  const res: any = await apiClient.get('/spaces/')
+  keySpaces.value = res.data || []
+}
+
 function formatDate(val: string) {
   if (!val) return '-'
   return new Date(val).toLocaleString()
@@ -346,5 +440,7 @@ onMounted(() => {
   fetchUsers()
   fetchRoles()
   fetchAuditLogs()
+  fetchAgentKeys()
+  fetchKeySpaces()
 })
 </script>

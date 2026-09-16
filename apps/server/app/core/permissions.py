@@ -10,13 +10,26 @@ ROLE_LEVELS = {
 }
 
 def check_admin(user: User):
+    if getattr(user, "actor_type", None) == "agent":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"code": "AGENT_READ_ONLY", "message": "Agent 凭证不能执行管理操作"}
+        )
     if user.role not in ["owner", "admin"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={"code": "PERMISSION_DENIED", "message": "需要管理员权限"}
         )
 
+def agent_space_allowed(user: User, space_id: int) -> bool:
+    limit = getattr(user, "agent_space_id", None)
+    if limit is None:
+        return True
+    return space_id == limit
+
 def get_space_role(db: Session, space_id: int, user: User) -> str:
+    if not agent_space_allowed(user, space_id):
+        return "none"
     if user.role in ["owner", "admin"]:
         return "admin"
     space = db.query(Space).filter(Space.id == space_id, Space.is_deleted == False).first()
@@ -40,6 +53,8 @@ def check_space_permission(db: Session, space_id: int, user: User, required_role
         )
 
 def can_access_knowledge(db: Session, knowledge: Knowledge, user: User, action: str = "read") -> bool:
+    if not agent_space_allowed(user, knowledge.space_id):
+        return False
     if user.role in ["owner", "admin"]:
         return True
     user_role = get_space_role(db, knowledge.space_id, user)

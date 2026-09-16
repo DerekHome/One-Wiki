@@ -102,8 +102,14 @@
         <el-table-column prop="title" label="文档标题" min-width="280">
           <template #default="{ row }">
             <div class="flex items-center gap-2 py-0.5">
-              <span v-if="row.source_type === 'file_import'" class="text-[10px] px-1.5 py-0.2 rounded bg-amber-950/40 text-amber-200 border border-amber-500/30 font-medium">
+              <span v-if="row.source_type === 'file_import'" class="text-[10px] px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200 font-medium">
                 导入
+              </span>
+              <span v-if="row.status === 'draft'" class="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200 font-medium">
+                草稿
+              </span>
+              <span v-if="row.status === 'archived'" class="text-[10px] px-1.5 py-0.2 rounded bg-zinc-100 text-zinc-600 border border-zinc-200 font-medium">
+                归档
               </span>
               <button class="text-left font-medium text-[var(--kh-text)] hover:text-[var(--kh-primary)] hover:underline cursor-pointer" @click="goToKnowledge(row.id)">
                 {{ row.title }}
@@ -126,9 +132,9 @@
             <span v-if="!row.tags || row.tags.length === 0" class="text-[var(--kh-text-dim)] text-xs">-</span>
           </template>
         </el-table-column>
-        <el-table-column label="版本" width="90">
+        <el-table-column label="状态" width="90">
           <template #default="{ row }">
-            <span class="text-xs text-[var(--kh-text-dim)] font-mono">v{{ row.current_version_id || 1 }}</span>
+            <span class="text-xs text-[var(--kh-text-dim)]">{{ row.status === 'published' ? '已发布' : row.status === 'draft' ? '草稿' : '归档' }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="updated_at" label="最后更新" width="170">

@@ -8,7 +8,8 @@ const COLLECTION_PATHS = new Set([
   '/knowledge',
   '/audit',
   '/modules',
-  '/search'
+  '/search',
+  '/agent-keys'
 ])
 
 function withCollectionSlash(url?: string) {

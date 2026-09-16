@@ -11,6 +11,7 @@ class SearchService:
         user: User,
         space_id: Optional[int] = None,
         knowledge_type: Optional[str] = None,
+        topic_id: Optional[int] = None,
         tag_name: Optional[str] = None,
         page: int = 1,
         page_size: int = 10
@@ -29,6 +30,9 @@ class SearchService:
             ).all()
 
         allowed_space_ids = [s[0] for s in allowed_spaces]
+        limit = getattr(user, "agent_space_id", None)
+        if limit is not None:
+            allowed_space_ids = [sid for sid in allowed_space_ids if sid == limit]
         if not allowed_space_ids:
             return {"items": [], "total": 0, "page": page, "page_size": page_size}
 
@@ -45,6 +49,9 @@ class SearchService:
 
         if knowledge_type:
             filters.append(Knowledge.knowledge_type == knowledge_type)
+
+        if topic_id:
+            filters.append(Knowledge.topic_id == topic_id)
 
         if tag_name:
             tag = db.query(Tag).filter(Tag.name == tag_name).first()
