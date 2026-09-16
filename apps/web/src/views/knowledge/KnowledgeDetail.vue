@@ -108,7 +108,7 @@
     </div>
 
     <!-- 右侧：GitBook 风格目录与版本/附件抽屉栏 -->
-    <aside class="w-80 bg-[var(--kh-surface-soft)] border-l border-[var(--kh-border)] p-5 overflow-y-auto shrink-0 hidden lg:block select-none">
+    <aside class="w-80 kh-acrylic border-l p-5 overflow-y-auto shrink-0 hidden lg:block select-none">
       <div class="space-y-6">
         <!-- 快捷操作按钮组 (Linear 风格) -->
         <div class="flex items-center gap-2">

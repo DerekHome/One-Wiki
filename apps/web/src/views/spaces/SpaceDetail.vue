@@ -1,7 +1,7 @@
 <template>
-  <div v-loading="loading" class="app-page space-detail flex flex-col min-h-full rounded-2xl border border-[var(--kh-border)] overflow-hidden">
+  <div v-loading="loading" class="app-page space-detail kh-acrylic flex flex-col min-h-full rounded-2xl overflow-hidden">
     <!-- 层次 1：空间概览主栏 (Surface 1: 空间层级信息与空间级管理操作) -->
-    <div class="px-4 lg:px-8 py-6 border-b border-[var(--kh-border)] bg-[var(--kh-surface)] flex flex-wrap gap-4 justify-between items-center shrink-0">
+    <div class="px-4 lg:px-8 py-6 border-b border-[var(--kh-acrylic-edge)] bg-transparent flex flex-wrap gap-4 justify-between items-center shrink-0">
       <div class="flex items-center gap-4 min-w-0 flex-1 mr-6">
         <!-- 空间视觉锚点图标徽章 -->
         <div class="w-12 h-12 kh-icon-tile text-xl shrink-0">
@@ -40,7 +40,7 @@
     </div>
 
     <!-- 层次 2：当前专题工具栏 (Surface 2: 略带灰阶底色，清晰锚定当前专注的业务专题) -->
-    <div class="px-4 lg:px-8 py-4 border-b border-[var(--kh-border)] bg-[var(--kh-surface-soft)] flex flex-wrap gap-4 justify-between items-center shrink-0">
+    <div class="px-4 lg:px-8 py-4 border-b border-[var(--kh-acrylic-edge)] bg-transparent flex flex-wrap gap-4 justify-between items-center shrink-0">
       <div class="flex items-center gap-3 min-w-0 mr-4">
         <!-- 专题名称标识 -->
         <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-md soft-panel shrink-0">

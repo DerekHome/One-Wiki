@@ -1,6 +1,6 @@
 <template>
-  <div class="kh-shell h-screen flex bg-[var(--kh-bg)] overflow-hidden text-[var(--kh-text)] font-sans antialiased">
-    <aside class="relative z-20 w-64 bg-[var(--kh-surface)] border-r border-[var(--kh-border)] flex flex-col justify-between select-none shrink-0">
+  <div class="kh-shell h-screen flex overflow-hidden text-[var(--kh-text)] font-sans antialiased">
+    <aside class="kh-acrylic relative z-20 w-64 border-r flex flex-col justify-between select-none shrink-0">
       <div class="flex flex-col h-full overflow-hidden">
         <SidebarBrand class="shrink-0" />
 
@@ -88,8 +88,8 @@
       </div>
     </aside>
 
-    <div class="relative flex-1 flex flex-col min-w-0 overflow-hidden bg-[var(--kh-bg)]">
-      <header class="h-14 px-6 border-b border-[var(--kh-border)] flex items-center justify-between bg-[var(--kh-surface)] shrink-0">
+    <div class="relative flex-1 flex flex-col min-w-0 overflow-hidden bg-transparent">
+      <header class="kh-acrylic h-14 px-6 border-b flex items-center justify-between shrink-0">
         <div class="flex items-center gap-2 text-xs text-[var(--kh-text-dim)] font-medium">
           <span class="hover:text-[var(--kh-text)] cursor-pointer" @click="$router.push('/spaces')">知识中心</span>
           <span class="text-[var(--kh-text-dim)]">/</span>

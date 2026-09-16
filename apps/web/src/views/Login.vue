@@ -1,7 +1,7 @@
 <template>
-  <div class="kh-shell min-h-screen grid lg:grid-cols-[1fr_460px] bg-[var(--kh-bg)]">
+  <div class="kh-shell min-h-screen grid lg:grid-cols-[1fr_460px]">
     <section class="hidden lg:flex flex-col justify-between px-12 py-10 relative overflow-hidden">
-      <div class="absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,var(--kh-glow),transparent_26rem)]"></div>
+      <div class="absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,color-mix(in_srgb,#12a594_38%,transparent),transparent_34rem),radial-gradient(circle_at_78%_78%,color-mix(in_srgb,#70e1d2_28%,transparent),transparent_28rem)]"></div>
 
       <div class="relative flex items-center gap-3">
         <div class="brand-mark w-9 h-9 rounded-xl text-xs tracking-wider">
@@ -56,7 +56,7 @@
           </div>
         </div>
 
-        <el-card class="login-card w-full rounded-2xl border border-[var(--kh-border)] shadow-[var(--kh-shadow-sm)]">
+        <el-card class="login-card kh-acrylic w-full rounded-2xl">
           <div class="text-center mb-6">
             <div class="brand-mark w-12 h-12 rounded-2xl text-sm tracking-wider mx-auto mb-4">
               <span>KH</span>
