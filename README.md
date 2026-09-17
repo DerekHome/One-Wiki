@@ -23,6 +23,11 @@
 
 建设方案全文见 [docs/企业知识中心系统建设方案.md](docs/企业知识中心系统建设方案.md)。
 
+**操作文档：**
+
+- [部署手册](docs/部署手册.md) — 环境、配置、本地启动、Docker、迁移、备份与生产检查
+- [使用手册](docs/使用手册.md) — 员工操作、权限与发布、管理员配置、Agent / MCP 接入
+
 ## 功能概览
 
 - **知识空间**：创建空间并设置 public、internal 或 private 可见性。
@@ -55,6 +60,8 @@
 - Docker Desktop（本地 MySQL，可选）
 
 ## 快速开始
+
+日常开发可按下列步骤在本机跑起来。完整说明、生产 Docker、升级与备份见 [部署手册](docs/部署手册.md)；登录后如何建空间、写知识、签发 Agent 见 [使用手册](docs/使用手册.md)。
 
 ### 0. 环境变量
 
@@ -157,7 +164,7 @@ One-Wiki/                    # 本仓库（Knowledge Center Monorepo）
 │     ├─ src/layouts/
 │     ├─ src/views/
 │     └─ src/router/
-├─ docs/                     # 产品与技术文档
+├─ docs/                     # 产品与技术文档（含部署手册、使用手册）
 ├─ modules/                  # 扩展模块
 ├─ packages/                 # 共享包预留
 ├─ docker-compose.yml        # db 默认启动；api/web 使用 --profile full
@@ -186,7 +193,7 @@ One-Wiki/                    # 本仓库（Knowledge Center Monorepo）
 
 ## Agent 接入
 
-智能体不要借用员工登录密码。任意登录用户可在 **设置 → Agent 凭证** 配置 Agent 信息与权限并签发 Key（管理员仍可看到全部配置页）：
+智能体不要借用员工登录密码。签发步骤、权限勾选与调用示例见 [使用手册 §11](docs/使用手册.md)。
 
 ```http
 Authorization: Bearer kck_...
@@ -210,6 +217,8 @@ python -m app.mcp_server
 
 ## 常见问题
 
+部署与启动类问题见 [部署手册 §12](docs/部署手册.md)；登录、发布、检索与 Agent 类问题见 [使用手册 §13](docs/使用手册.md)。
+
 **登录后立即回到登录页**
 
 - 确认后端与数据库已启动（前端代理 `ECONNREFUSED` 时会表现为登录失败）。
@@ -229,6 +238,8 @@ python -m app.mcp_server
 
 ## 文档
 
+- [docs/部署手册.md](docs/部署手册.md) — 部署、配置、升级与生产检查  
+- [docs/使用手册.md](docs/使用手册.md) — 员工、管理员与智能体操作说明  
 - [RUNNING.md](RUNNING.md) — 运行与测试补充说明  
 - [DECISIONS.md](DECISIONS.md) — 产品定位与架构决策  
 - [PROGRESS.md](PROGRESS.md) — 开发进度  

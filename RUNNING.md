@@ -15,7 +15,7 @@ python -m uvicorn app.main:app --reload --port 8000
 
 正式环境必须设置 `ENVIRONMENT=production`、随机的 `SECRET_KEY`（至少 32 个字符）、`DATABASE_URL` 和 `UPLOAD_DIR`。生产启动时缺少密钥或附件目录会直接失败。数据库升级使用 `python -m alembic upgrade head`，执行前先完成备份。`python db_init.py` 仅保留给本地一次性初始化，在 `ENVIRONMENT=production` 时会拒绝执行。
 
-存活检查为 `GET /health`，数据库就绪检查为 `GET /ready`。附件默认大小由 `MAX_UPLOAD_SIZE_MB` 控制，管理员在「存储配置」中保存的上限与扩展名白名单会写入数据库并立即作用于上传。
+存活检查为 `GET /health`，数据库就绪检查为 `GET /ready`。附件默认大小由 `MAX_UPLOAD_SIZE_MB` 控制，管理员在「存储配置」中保存的上限与扩展名白名单会写入数据库并立即作用于上传。逐步说明见 [docs/部署手册.md](docs/部署手册.md)，业务操作见 [docs/使用手册.md](docs/使用手册.md)。
 
 生产可用 Docker 一次拉起数据库、API 与 Nginx 反向代理：
 
