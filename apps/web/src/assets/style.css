@@ -3,48 +3,51 @@
 @tailwind utilities;
 
 @layer base {
-  /* Radix Colors Sage + Teal: https://www.radix-ui.com/colors */
+  /* Windows Aero glass: luminous sky blue, specular highlight, colored translucency */
   :root {
-    --font-sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Sans SC", sans-serif;
+    --font-sans: "Segoe UI", "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-    --kh-bg: #f7f9f8;
-    --kh-bg-deep: #eef1f0;
-    --kh-surface: #fbfdfc;
+    --kh-bg: #cfe8fb;
+    --kh-bg-deep: #b7dcf6;
+    --kh-surface: #eaf5ff;
     --kh-surface-solid: #ffffff;
-    --kh-surface-soft: #f7f9f8;
-    --kh-fill: #eef1f0;
-    --kh-border: #d7dad9;
-    --kh-border-strong: #b8bcba;
-    --kh-text: #1a211e;
-    --kh-text-soft: #3f4744;
-    --kh-text-muted: #5f6563;
-    --kh-text-dim: #868e8b;
-    --kh-primary: #008573;
-    --kh-primary-strong: #0d3d38;
-    --kh-primary-soft: #e0f8f3;
-    --kh-cyan: #0d9b8a;
-    --kh-glow: color-mix(in srgb, #12a594 16%, transparent);
-    --kh-ink: #1a211e;
-    --kh-shadow-sm: 0 1px 2px color-mix(in srgb, #1a211e 5%, transparent);
-    --kh-shadow-md: 0 18px 40px color-mix(in srgb, #1a211e 8%, transparent);
-    --kh-acrylic: color-mix(in srgb, #e7f6f2 40%, transparent);
-    --kh-acrylic-strong: color-mix(in srgb, #f3fbf8 58%, transparent);
-    --kh-acrylic-edge: color-mix(in srgb, #ffffff 78%, var(--kh-border));
-    --kh-acrylic-blur: 30px;
-    --kh-acrylic-saturate: 1.85;
-    --kh-highlight: inset 0 1px 0 color-mix(in srgb, #ffffff 90%, transparent), inset 0 -1px 0 color-mix(in srgb, #12a594 8%, transparent);
+    --kh-surface-soft: #def0fc;
+    --kh-fill: #cce6f8;
+    --kh-border: #9ec9ea;
+    --kh-border-strong: #6eaddc;
+    --kh-text: #14324c;
+    --kh-text-soft: #2c516c;
+    --kh-text-muted: #4a6f8a;
+    --kh-text-dim: #7b9bb3;
+    --kh-primary: #1570c7;
+    --kh-primary-strong: #0b4f96;
+    --kh-primary-soft: #d6edff;
+    --kh-cyan: #1aa3c9;
+    --kh-glow: color-mix(in srgb, #3ba6f0 32%, transparent);
+    --kh-ink: #0f2740;
+    --kh-shadow-sm: 0 2px 8px color-mix(in srgb, #0b4f96 10%, transparent);
+    --kh-shadow-md: 0 18px 42px color-mix(in srgb, #0b4f96 18%, transparent);
+    --kh-acrylic: color-mix(in srgb, #d5ecff 46%, transparent);
+    --kh-acrylic-strong: color-mix(in srgb, #eef7ff 64%, transparent);
+    --kh-acrylic-edge: color-mix(in srgb, #ffffff 82%, #8ec4ea);
+    --kh-acrylic-blur: 26px;
+    --kh-acrylic-saturate: 2.15;
+    --kh-highlight:
+      inset 0 1px 0 color-mix(in srgb, #ffffff 94%, transparent),
+      inset 0 14px 22px color-mix(in srgb, #ffffff 22%, transparent),
+      inset 0 -1px 0 color-mix(in srgb, #3b91d4 22%, transparent);
     --kh-noise: url("./acrylic-noise.png");
     --kh-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
     --kh-ease: cubic-bezier(0.2, 0, 0, 1);
 
     --el-color-primary: var(--kh-primary);
-    --el-color-primary-light-3: #53b9ab;
-    --el-color-primary-light-5: #83cdc1;
-    --el-color-primary-light-7: #b8eae0;
-    --el-color-primary-light-8: #ccf3ea;
-    --el-color-primary-light-9: #e0f8f3;
-    --el-color-primary-dark-2: #0d9b8a;
+    --el-color-primary-light-3: #4ea3e4;
+    --el-color-primary-light-5: #7cbcf0;
+    --el-color-primary-light-7: #b3daf8;
+    --el-color-primary-light-8: #cce6fb;
+    --el-color-primary-light-9: #e5f3fd;
+    --el-color-primary-dark-2: #0e5aa3;
   }
 
   html,
@@ -100,11 +103,12 @@
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 52rem 38rem at 8% 8%, color-mix(in srgb, #12a594 48%, transparent), transparent 64%),
-    radial-gradient(ellipse 46rem 36rem at 96% 4%, color-mix(in srgb, #5dcca9 42%, transparent), transparent 60%),
-    radial-gradient(ellipse 44rem 38rem at 78% 108%, color-mix(in srgb, #b8eae0 62%, transparent), transparent 56%),
-    radial-gradient(ellipse 32rem 26rem at 36% 62%, color-mix(in srgb, #0d9b8a 24%, transparent), transparent 70%),
-    var(--kh-bg);
+    radial-gradient(ellipse 54rem 40rem at 8% -6%, color-mix(in srgb, #3ba6f0 62%, transparent), transparent 62%),
+    radial-gradient(ellipse 46rem 36rem at 96% 4%, color-mix(in srgb, #2fd0e4 48%, transparent), transparent 58%),
+    radial-gradient(ellipse 42rem 34rem at 18% 88%, color-mix(in srgb, #7ad08a 32%, transparent), transparent 60%),
+    radial-gradient(ellipse 48rem 38rem at 82% 108%, color-mix(in srgb, #8ec8f8 55%, transparent), transparent 56%),
+    radial-gradient(ellipse 28rem 22rem at 48% 42%, color-mix(in srgb, #ffffff 40%, transparent), transparent 72%),
+    linear-gradient(180deg, #b9e0fb 0%, #e4f4ff 46%, #c5e8fb 100%);
 }
 
 .kh-shell > * {
@@ -117,11 +121,33 @@
 .metric-card,
 .soft-panel {
   position: relative;
-  background: var(--kh-acrylic);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #ffffff 58%, transparent) 0%,
+      var(--kh-acrylic) 42%,
+      color-mix(in srgb, #6db4ea 30%, transparent) 100%
+    );
   backdrop-filter: blur(var(--kh-acrylic-blur)) saturate(var(--kh-acrylic-saturate));
   -webkit-backdrop-filter: blur(var(--kh-acrylic-blur)) saturate(var(--kh-acrylic-saturate));
   border: 1px solid var(--kh-acrylic-edge);
   box-shadow: var(--kh-highlight), var(--kh-shadow-sm);
+}
+
+.kh-acrylic::before,
+.linear-card::before,
+.metric-card::before,
+.soft-panel::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 46%;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(180deg, color-mix(in srgb, #ffffff 55%, transparent), transparent);
 }
 
 .kh-acrylic::after,
@@ -134,7 +160,7 @@
   z-index: 2;
   pointer-events: none;
   border-radius: inherit;
-  opacity: 0.08;
+  opacity: 0.055;
   mix-blend-mode: overlay;
   background-image: var(--kh-noise);
   background-size: 64px 64px;
@@ -329,35 +355,51 @@
 }
 
 .app-button-primary {
-  background: linear-gradient(180deg, #12a594 0%, #008573 100%);
-  border: 1px solid color-mix(in srgb, #0d3d38 35%, #008573);
+  background: linear-gradient(180deg, #6ec2f7 0%, #1570c7 52%, #0d5aa8 100%);
+  border: 1px solid #0e5aa3;
   color: #ffffff;
-  box-shadow: 0 8px 18px var(--kh-glow);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #ffffff 58%, transparent),
+    0 8px 18px var(--kh-glow);
 }
 
 .app-button-primary:hover {
-  background: linear-gradient(180deg, #0d9b8a 0%, #0d3d38 100%);
-  box-shadow: 0 10px 24px var(--kh-glow);
+  background: linear-gradient(180deg, #82ccf8 0%, #1a7ad4 52%, #0b4f96 100%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #ffffff 62%, transparent),
+    0 10px 24px var(--kh-glow);
 }
 
 .app-button-dark {
-  background: linear-gradient(180deg, #3f4744 0%, #1a211e 100%);
+  background: linear-gradient(180deg, #4a6f8a 0%, #14324c 100%);
   border: 1px solid var(--kh-ink);
   color: #ffffff;
-  box-shadow: var(--kh-shadow-sm);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #ffffff 22%, transparent),
+    var(--kh-shadow-sm);
 }
 
 .app-button-ghost {
-  background: color-mix(in srgb, #ffffff 52%, transparent);
-  backdrop-filter: blur(12px) saturate(1.3);
-  -webkit-backdrop-filter: blur(12px) saturate(1.3);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #ffffff 72%, transparent),
+      color-mix(in srgb, #cfe8ff 42%, transparent)
+    );
+  backdrop-filter: blur(12px) saturate(1.6);
+  -webkit-backdrop-filter: blur(12px) saturate(1.6);
   border: 1px solid var(--kh-acrylic-edge);
   color: var(--kh-text-soft);
   box-shadow: var(--kh-highlight);
 }
 
 .app-button-ghost:hover {
-  background: color-mix(in srgb, #ffffff 72%, transparent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #ffffff 86%, transparent),
+      color-mix(in srgb, #d6edff 58%, transparent)
+    );
   border-color: var(--kh-border-strong);
   color: var(--kh-text);
 }
@@ -369,10 +411,12 @@
   justify-content: center;
   overflow: hidden;
   background:
-    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.34), transparent 1.8rem),
-    linear-gradient(135deg, #12a594 0%, #0d3d38 100%);
+    radial-gradient(circle at 30% 18%, rgba(255, 255, 255, 0.55), transparent 1.8rem),
+    linear-gradient(180deg, #6ec2f7 0%, #1570c7 55%, #0b4f96 100%);
   color: #ffffff;
-  box-shadow: 0 8px 18px var(--kh-glow);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 8px 18px var(--kh-glow);
 }
 
 .brand-mark::after {
@@ -475,9 +519,11 @@
 }
 
 .el-button--primary {
-  background-color: var(--kh-primary) !important;
-  border-color: var(--kh-primary) !important;
-  box-shadow: 0 8px 18px var(--kh-glow);
+  background: linear-gradient(180deg, #6ec2f7 0%, #1570c7 52%, #0d5aa8 100%) !important;
+  border-color: #0e5aa3 !important;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #ffffff 55%, transparent),
+    0 8px 18px var(--kh-glow);
   transition:
     transform 140ms var(--kh-ease-out),
     background-color 160ms var(--kh-ease-out),
@@ -485,8 +531,8 @@
     box-shadow 160ms var(--kh-ease-out) !important;
 }
 .el-button--primary:hover {
-  background-color: var(--kh-primary-strong) !important;
-  border-color: var(--kh-primary-strong) !important;
+  background: linear-gradient(180deg, #82ccf8 0%, #1a7ad4 52%, #0b4f96 100%) !important;
+  border-color: #0b4f96 !important;
 }
 .el-button--primary:active {
   transform: scale(0.98);
@@ -494,12 +540,31 @@
 
 .el-card {
   position: relative;
-  background: var(--kh-acrylic) !important;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #ffffff 58%, transparent) 0%,
+      var(--kh-acrylic) 42%,
+      color-mix(in srgb, #6db4ea 30%, transparent) 100%
+    ) !important;
   backdrop-filter: blur(var(--kh-acrylic-blur)) saturate(var(--kh-acrylic-saturate));
   -webkit-backdrop-filter: blur(var(--kh-acrylic-blur)) saturate(var(--kh-acrylic-saturate));
   border: 1px solid var(--kh-acrylic-edge) !important;
   color: var(--kh-text) !important;
   box-shadow: var(--kh-highlight), var(--kh-shadow-md) !important;
+}
+
+.el-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 46%;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(180deg, color-mix(in srgb, #ffffff 55%, transparent), transparent);
 }
 
 .el-card::after {
@@ -509,23 +574,28 @@
   z-index: 2;
   pointer-events: none;
   border-radius: inherit;
-  opacity: 0.08;
+  opacity: 0.055;
   mix-blend-mode: overlay;
   background-image: var(--kh-noise);
   background-size: 64px 64px;
 }
 
 .el-overlay {
-  background: color-mix(in srgb, #1a211e 22%, transparent) !important;
-  backdrop-filter: blur(10px) saturate(1.2);
-  -webkit-backdrop-filter: blur(10px) saturate(1.2);
+  background: color-mix(in srgb, #0f2740 28%, transparent) !important;
+  backdrop-filter: blur(10px) saturate(1.4);
+  -webkit-backdrop-filter: blur(10px) saturate(1.4);
 }
 
 .el-dialog,
 .el-drawer {
-  background: var(--kh-acrylic-strong) !important;
-  backdrop-filter: blur(32px) saturate(1.7);
-  -webkit-backdrop-filter: blur(32px) saturate(1.7);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, #ffffff 70%, transparent) 0%,
+      var(--kh-acrylic-strong) 100%
+    ) !important;
+  backdrop-filter: blur(32px) saturate(2);
+  -webkit-backdrop-filter: blur(32px) saturate(2);
   border: 1px solid var(--kh-acrylic-edge);
   box-shadow: var(--kh-highlight), var(--kh-shadow-md);
 }
@@ -616,6 +686,11 @@ summary:focus-visible {
     background-image: none !important;
   }
 
+  .kh-acrylic::before,
+  .linear-card::before,
+  .metric-card::before,
+  .soft-panel::before,
+  .el-card::before,
   .kh-acrylic::after,
   .linear-card::after,
   .metric-card::after,
