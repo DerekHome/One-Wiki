@@ -391,7 +391,7 @@
 .sidebar-brand {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   min-height: 3.5rem;
   padding: 0.85rem 1rem;
   border-bottom: 1px solid var(--kh-acrylic-edge);
@@ -406,8 +406,9 @@
 .sidebar-brand__inner {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.65rem;
+  width: 100%;
   max-width: 100%;
 }
 
