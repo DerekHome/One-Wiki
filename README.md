@@ -64,7 +64,7 @@
 Copy-Item .env.example .env
 ```
 
-开发环境可使用模板中的默认数据库连接。**生产环境**必须修改 `DATABASE_URL`、`SECRET_KEY`、`CORS_ORIGINS` 等；`SECRET_KEY` 至少 32 字符，不能使用示例值。
+开发环境可使用模板中的默认数据库连接。**生产环境**必须修改 `DATABASE_URL`、`SECRET_KEY`、`UPLOAD_DIR`、`CORS_ORIGINS` 等；`SECRET_KEY` 至少 32 字符，不能使用示例值。
 
 若本机 **3306 端口已被占用**，可修改 `docker-compose.yml` 的端口映射（例如 `3307:3306`），并同步更新 `.env` 中的 `DATABASE_URL` 主机端口。
 
@@ -160,7 +160,8 @@ One-Wiki/                    # 本仓库（Knowledge Center Monorepo）
 ├─ docs/                     # 产品与技术文档
 ├─ modules/                  # 扩展模块
 ├─ packages/                 # 共享包预留
-├─ docker-compose.yml
+├─ docker-compose.yml        # db 默认启动；api/web 使用 --profile full
+├─ .github/workflows/ci.yml  # push/PR 自动跑 pytest 与前端 build
 ├─ .env.example
 ├─ start.bat                 # Windows：启动 MySQL + 前后端
 ├─ stop.bat                  # Windows：停止前后端与 MySQL 容器
@@ -221,8 +222,9 @@ python -m app.mcp_server
 ## 安全注意事项
 
 - 不要提交 `.env`、JWT 密钥、数据库密码或上传文件。
-- 生产环境必须设置安全的 `SECRET_KEY`；缺失或使用示例值时应用会拒绝启动。
+- 生产环境必须设置安全的 `SECRET_KEY` 和 `UPLOAD_DIR`；缺失或使用示例值时应用会拒绝启动。
 - 正文导入与 Markdown 渲染使用白名单过滤；新增富文本入口需同等处理。
+- 登录失败会按 IP + 用户名限流；修改密码后旧 JWT 立即失效。
 - 生产环境将 `CORS_ORIGINS` 限制为实际前端域名，并通过 HTTPS 暴露服务。
 
 ## 文档

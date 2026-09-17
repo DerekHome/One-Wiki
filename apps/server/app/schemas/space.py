@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List
 from datetime import datetime
 from app.schemas.user import UserResponse
@@ -14,6 +14,7 @@ class SpaceUpdate(BaseModel):
     visibility: Optional[str] = None
 
 class SpaceResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     name: str
     description: Optional[str]
@@ -21,18 +22,15 @@ class SpaceResponse(BaseModel):
     visibility: str
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
-    class Config:
-        from_attributes = True
 
 class SpaceMemberAdd(BaseModel):
     user_id: int
     role: str = Field("viewer", pattern="^(admin|editor|viewer)$")  # admin, editor, viewer
 
 class SpaceMemberResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     space_id: int
     user_id: int
     role: str
     user: Optional[UserResponse] = None
-    class Config:
-        from_attributes = True

@@ -10,6 +10,7 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     role = Column(String(32), default="viewer", nullable=False)  # owner, admin, editor, viewer
     is_active = Column(Boolean, default=True, nullable=False)
+    security_stamp = Column(Integer, default=0, server_default="0", nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -126,6 +127,13 @@ class ModuleConfig(Base):
     version = Column(String(32), nullable=False)
     status = Column(String(32), default="installed", nullable=False)  # installed, enabled, disabled, error
     config = Column(JSON, default=dict, nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class SystemSetting(Base):
+    __tablename__ = "system_settings"
+    key = Column(String(64), primary_key=True)
+    value = Column(JSON, nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 

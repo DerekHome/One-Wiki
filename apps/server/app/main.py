@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import logging
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,6 +12,9 @@ from app.schemas.common import ResponseModel
 from app.models.database import SessionLocal, get_db
 from app.core.config import settings
 from app.core.modules.registry import module_registry
+from app.services.system_settings_service import load_from_db as load_system_settings
+
+logger = logging.getLogger("knowledge-center")
 
 
 @asynccontextmanager
@@ -18,6 +22,7 @@ async def lifespan(app: FastAPI):
     db = SessionLocal()
     try:
         module_registry.load_from_db(db)
+        load_system_settings(db)
     finally:
         db.close()
     yield
@@ -83,6 +88,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 async def generic_exception_handler(request: Request, exc: Exception):
     if isinstance(exc, HTTPException):
         return _http_error_response(exc)
+    logger.exception("Unhandled error on %s %s", request.method, request.url.path)
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content=ResponseModel(

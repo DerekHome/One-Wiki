@@ -1,4 +1,3 @@
-import os
 from fastapi import APIRouter, Depends, Body
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -7,22 +6,10 @@ from app.models.entities import User, Space, Knowledge, KnowledgeVersion, Attach
 from app.schemas.common import ResponseModel
 from app.core.security import get_current_user
 from app.core.permissions import check_admin
-from app.core.config import settings
+from app.services.system_settings_service import get_cached_settings, save_to_db
 from typing import Dict, Any
 
 router = APIRouter()
-
-# 模拟/持久化系统偏好配置
-_system_settings = {
-    "site_name": "企业知识中心 (Knowledge Hub)",
-    "storage_type": "local",
-    "storage_path": settings.UPLOAD_DIR,
-    "max_upload_size_mb": 50,
-    "allowed_extensions": [".md", ".markdown", ".html", ".htm", ".png", ".jpg", ".pdf", ".zip"],
-    "allow_registration": True,
-    "default_space_visibility": "internal",
-    "jwt_expire_minutes": settings.ACCESS_TOKEN_EXPIRE_MINUTES
-}
 
 @router.get("/stats")
 def get_system_stats(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -52,13 +39,16 @@ def get_system_stats(current_user: User = Depends(get_current_user), db: Session
 @router.get("/settings")
 def get_system_settings(current_user: User = Depends(get_current_user)):
     check_admin(current_user)
-    return ResponseModel(data=_system_settings)
+    return ResponseModel(data=get_cached_settings())
 
 @router.put("/settings")
-def update_system_settings(payload: Dict[str, Any] = Body(...), current_user: User = Depends(get_current_user)):
+def update_system_settings(
+    payload: Dict[str, Any] = Body(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     check_admin(current_user)
-    _system_settings.update(payload)
-    return ResponseModel(data=_system_settings)
+    return ResponseModel(data=save_to_db(db, payload))
 
 @router.get("/roles-matrix")
 def get_roles_matrix(current_user: User = Depends(get_current_user)):

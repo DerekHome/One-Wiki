@@ -1,10 +1,24 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, and_, func
+from sqlalchemy import or_, and_, func, text
 from app.models.entities import Knowledge, Space, SpaceMember, Tag, KnowledgeTag, User
 from app.core.permissions import resolve_agent_space_ids
-from typing import List, Optional
+from typing import Optional
+import re
+
+
+_FULLTEXT_UNSAFE = re.compile(r'[+\-<>()~*"@]')
+
 
 class SearchService:
+    @staticmethod
+    def _sanitize_fulltext(query_str: str) -> str:
+        return _FULLTEXT_UNSAFE.sub(" ", query_str).strip()[:200]
+
+    @staticmethod
+    def _dialect_name(db: Session) -> str:
+        bind = db.get_bind()
+        return getattr(getattr(bind, "dialect", None), "name", "") or ""
+
     @staticmethod
     def search(
         db: Session,
@@ -63,13 +77,21 @@ class SearchService:
             filters.append(Knowledge.id.in_(k_ids_with_tag))
 
         if query_str:
-            q_clean = query_str.strip().lower()
-            pattern = f"%{q_clean}%"
-            filters.append(or_(
-                func.lower(Knowledge.title).like(pattern),
-                func.lower(Knowledge.content).like(pattern),
-                func.lower(Knowledge.summary).like(pattern)
-            ))
+            q_clean = query_str.strip()
+            if SearchService._dialect_name(db) == "mysql":
+                ftq = SearchService._sanitize_fulltext(q_clean)
+                if ftq:
+                    filters.append(text(
+                        "MATCH (knowledge.title, knowledge.summary, knowledge.content) "
+                        "AGAINST (:ftq IN NATURAL LANGUAGE MODE)"
+                    ).bindparams(ftq=ftq))
+            else:
+                pattern = f"%{q_clean.lower()}%"
+                filters.append(or_(
+                    func.lower(Knowledge.title).like(pattern),
+                    func.lower(Knowledge.content).like(pattern),
+                    func.lower(Knowledge.summary).like(pattern)
+                ))
 
         total = db.query(func.count(Knowledge.id)).filter(and_(*filters)).scalar() or 0
         results = db.query(Knowledge).filter(and_(*filters)).order_by(Knowledge.updated_at.desc()).offset((page - 1) * page_size).limit(page_size).all()

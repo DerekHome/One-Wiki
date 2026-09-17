@@ -99,7 +99,7 @@
                   <el-input v-model="regForm.username" placeholder="至少3位字符" size="large" :prefix-icon="User" />
                 </el-form-item>
                 <el-form-item label="设置密码">
-                  <el-input v-model="regForm.password" type="password" placeholder="至少6位密码" size="large" show-password :prefix-icon="Lock" />
+                  <el-input v-model="regForm.password" type="password" placeholder="至少8位密码" size="large" show-password :prefix-icon="Lock" />
                 </el-form-item>
                 <button
                   type="button"

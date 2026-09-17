@@ -63,7 +63,7 @@
                 </div>
                 <div class="flex justify-between py-1 border-b border-[var(--kh-border)]">
                   <span class="text-[var(--kh-text-muted)]">全文检索机制</span>
-                  <span class="font-medium text-[var(--kh-text-soft)]">关键词检索（标题 / 摘要 / 正文）</span>
+                  <span class="font-medium text-[var(--kh-text-soft)]">MySQL FULLTEXT / SQLite LIKE</span>
                 </div>
                 <div class="flex justify-between py-1">
                   <span class="text-[var(--kh-text-muted)]">Agent 接入</span>
@@ -151,7 +151,7 @@
                 default-first-option
                 class="w-full"
               />
-              <div class="text-[11px] text-[var(--kh-text-dim)] mt-1">支持输入回车自定义扩展名，如 .md, .html, .pdf 等</div>
+              <div class="text-[11px] text-[var(--kh-text-dim)] mt-1">保存后立即生效。HTML/HTM 等可执行类型会以下载方式提供，不会在浏览器中直接打开。</div>
             </el-form-item>
 
             <el-button type="primary" class="mt-4" :loading="savingSettings" @click="saveSettings">
@@ -272,7 +272,7 @@
           <el-input v-model="userForm.username" placeholder="至少3位字符" />
         </el-form-item>
         <el-form-item label="初始登录密码" required>
-          <el-input v-model="userForm.password" type="password" placeholder="至少6位" show-password />
+          <el-input v-model="userForm.password" type="password" placeholder="至少8位" show-password />
         </el-form-item>
         <el-form-item label="系统角色">
           <el-select v-model="userForm.role" class="w-full">

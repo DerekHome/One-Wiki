@@ -19,6 +19,7 @@ def list_users(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    check_admin(current_user)
     users = UserService.list_users(db, skip=skip, limit=limit)
     return ResponseModel(data=[UserResponse.model_validate(u) for u in users])
 

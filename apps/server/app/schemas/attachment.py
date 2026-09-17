@@ -1,8 +1,9 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import datetime
 
 class AttachmentResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     knowledge_id: Optional[int]
     filename: str
@@ -10,5 +11,3 @@ class AttachmentResponse(BaseModel):
     size: int
     checksum: Optional[str]
     created_at: Optional[datetime]
-    class Config:
-        from_attributes = True

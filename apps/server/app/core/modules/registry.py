@@ -45,7 +45,7 @@ class ModuleRegistry:
             id="search",
             name="Keyword Search",
             version="1.0.0",
-            description="基于标题、摘要与正文的关键词检索（不依赖大模型）",
+            description="MySQL FULLTEXT（ngram）关键词检索，SQLite 测试环境回退 LIKE",
             extension_point="search_provider"
         ))
         file_mod = BaseModule(ModuleManifest(

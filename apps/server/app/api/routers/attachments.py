@@ -52,7 +52,13 @@ def download_attachment(
         if not can_access_knowledge(db, k, current_user, "read"):
             raise HTTPException(status_code=403, detail={"code": "PERMISSION_DENIED", "message": "无权下载该附件"})
     record_audit_log(db, action="download_attachment", resource=f"attachment:{att.id}", user_id=current_user.id, username=current_user.username, details={"filename": att.filename})
-    return FileResponse(path=att.storage_path, filename=att.filename, media_type=att.mime_type or "application/octet-stream")
+    media_type, disposition = AttachmentService.download_headers(att.filename, att.mime_type)
+    return FileResponse(
+        path=att.storage_path,
+        filename=att.filename,
+        media_type=media_type,
+        content_disposition_type=disposition,
+    )
 
 @router.delete("/{attachment_id}", response_model=ResponseModel[dict])
 def delete_attachment(

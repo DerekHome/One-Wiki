@@ -39,11 +39,14 @@ class UserService:
         if not user:
             raise HTTPException(status_code=404, detail={"code": "NOT_FOUND", "message": "用户不存在"})
         if data.role is not None:
+            if data.role not in UserService.ALLOWED_ROLES:
+                raise HTTPException(status_code=422, detail={"code": "INVALID_ROLE", "message": "无效的系统角色"})
             user.role = data.role
         if data.is_active is not None:
             user.is_active = data.is_active
         if data.password:
             user.hashed_password = get_password_hash(data.password)
+            user.security_stamp = int(user.security_stamp or 0) + 1
         db.commit()
         db.refresh(user)
         return user

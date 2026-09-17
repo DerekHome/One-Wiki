@@ -44,7 +44,7 @@
           <el-input v-model="form.username" placeholder="至少3位" />
         </el-form-item>
         <el-form-item label="初始密码" required>
-          <el-input v-model="form.password" type="password" placeholder="至少6位" show-password />
+          <el-input v-model="form.password" type="password" placeholder="至少8位" show-password />
         </el-form-item>
         <el-form-item label="系统角色">
           <el-select v-model="form.role" class="w-full">

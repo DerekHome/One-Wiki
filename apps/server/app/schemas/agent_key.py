@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AgentApiKeyCreate(BaseModel):
@@ -20,6 +20,7 @@ class AgentApiKeyUpdate(BaseModel):
 
 
 class AgentApiKeyResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     name: str
     description: Optional[str] = None
@@ -32,9 +33,6 @@ class AgentApiKeyResponse(BaseModel):
     is_active: bool
     last_used_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True
 
 
 class AgentApiKeyCreatedResponse(AgentApiKeyResponse):

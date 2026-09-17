@@ -15,6 +15,8 @@ from app.models.database import Base, get_db
 from app.models.entities import User
 from app.core.security import get_password_hash
 from app.core.config import settings
+from app.core.rate_limit import login_limiter
+from app.services.system_settings_service import reset_runtime_cache
 
 test_engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
@@ -44,6 +46,8 @@ def db_session():
 def reset_database(tmp_path):
     original_upload_dir = settings.UPLOAD_DIR
     settings.UPLOAD_DIR = str(tmp_path / "uploads")
+    reset_runtime_cache()
+    login_limiter.reset_all()
     Base.metadata.drop_all(bind=test_engine)
     Base.metadata.create_all(bind=test_engine)
     db = TestingSessionLocal()

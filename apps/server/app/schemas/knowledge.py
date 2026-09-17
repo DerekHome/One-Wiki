@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
@@ -23,6 +23,7 @@ class KnowledgeUpdate(BaseModel):
     status: Optional[str] = None
 
 class KnowledgeVersionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     knowledge_id: int
     version_number: int
@@ -31,10 +32,9 @@ class KnowledgeVersionResponse(BaseModel):
     change_summary: Optional[str]
     created_by: Optional[int]
     created_at: Optional[datetime]
-    class Config:
-        from_attributes = True
 
 class KnowledgeResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     space_id: int
     topic_id: Optional[int] = None
@@ -53,8 +53,6 @@ class KnowledgeResponse(BaseModel):
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
     published_at: Optional[datetime]
-    class Config:
-        from_attributes = True
 
 class VersionDiffResponse(BaseModel):
     version_from: int

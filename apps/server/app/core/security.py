@@ -71,8 +71,16 @@ def get_current_user_optional(
         return None
     username = payload.get("sub")
     user = db.query(User).filter(User.username == username).first()
-    if user:
-        user.actor_type = "human"
+    if not user:
+        return None
+    token_stamp = payload.get("sst")
+    current_stamp = int(getattr(user, "security_stamp", 0) or 0)
+    if token_stamp is None:
+        if current_stamp != 0:
+            return None
+    elif int(token_stamp) != current_stamp:
+        return None
+    user.actor_type = "human"
     return user
 
 def get_current_user(

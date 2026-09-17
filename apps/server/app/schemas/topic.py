@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 from datetime import datetime
 
@@ -16,11 +16,9 @@ class TopicUpdate(BaseModel):
     sort_order: Optional[int] = None
 
 class TopicResponse(TopicBase):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     space_id: int
     is_deleted: bool
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True

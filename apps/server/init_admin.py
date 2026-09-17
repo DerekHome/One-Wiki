@@ -25,6 +25,7 @@ def main() -> None:
             user.role = "admin"
             user.is_active = True
             user.hashed_password = get_password_hash(args.password)
+            user.security_stamp = int(getattr(user, "security_stamp", 0) or 0) + 1
         db.commit()
         print(f"Administrator ready: {user.username}")
     finally:
