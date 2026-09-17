@@ -3,51 +3,49 @@
 @tailwind utilities;
 
 @layer base {
-  /* Windows Aero glass: luminous sky blue, specular highlight, colored translucency */
+  /* Knowledge-product palette: Feishu / Notion / Confluence — neutrals first, brand blue only for action */
   :root {
-    --font-sans: "Segoe UI", "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", sans-serif;
+    --font-sans: "IBM Plex Sans", "PingFang SC", "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-    --kh-bg: #cfe8fb;
-    --kh-bg-deep: #b7dcf6;
-    --kh-surface: #eaf5ff;
+    /* Neutrals: Feishu Background 1–3 + Notion paper. Accent: Feishu #1456F0 / Atlassian #0C66E4 family. */
+    --kh-bg: #f5f6f7;
+    --kh-bg-deep: #eff0f1;
+    --kh-surface: #ffffff;
     --kh-surface-solid: #ffffff;
-    --kh-surface-soft: #def0fc;
-    --kh-fill: #cce6f8;
-    --kh-border: #9ec9ea;
-    --kh-border-strong: #6eaddc;
-    --kh-text: #14324c;
-    --kh-text-soft: #2c516c;
-    --kh-text-muted: #4a6f8a;
-    --kh-text-dim: #7b9bb3;
-    --kh-primary: #1570c7;
-    --kh-primary-strong: #0b4f96;
-    --kh-primary-soft: #d6edff;
-    --kh-cyan: #1aa3c9;
-    --kh-glow: color-mix(in srgb, #3ba6f0 32%, transparent);
-    --kh-ink: #0f2740;
-    --kh-shadow-sm: 0 2px 8px color-mix(in srgb, #0b4f96 10%, transparent);
-    --kh-shadow-md: 0 18px 42px color-mix(in srgb, #0b4f96 18%, transparent);
-    --kh-acrylic: color-mix(in srgb, #d5ecff 46%, transparent);
-    --kh-acrylic-strong: color-mix(in srgb, #eef7ff 64%, transparent);
-    --kh-acrylic-edge: color-mix(in srgb, #ffffff 82%, #8ec4ea);
-    --kh-acrylic-blur: 26px;
-    --kh-acrylic-saturate: 2.15;
-    --kh-highlight:
-      inset 0 1px 0 color-mix(in srgb, #ffffff 94%, transparent),
-      inset 0 14px 22px color-mix(in srgb, #ffffff 22%, transparent),
-      inset 0 -1px 0 color-mix(in srgb, #3b91d4 22%, transparent);
+    --kh-surface-soft: #f8f9fa;
+    --kh-fill: #eff0f1;
+    --kh-border: #e5e6e8;
+    --kh-border-strong: #bbbfc4;
+    --kh-text: #1f2329;
+    --kh-text-soft: #2b2f36;
+    --kh-text-muted: #646a73;
+    --kh-text-dim: #8f959e;
+    --kh-primary: #1456f0;
+    --kh-primary-strong: #0d3ecc;
+    --kh-primary-soft: #e8effe;
+    --kh-cyan: #1456f0;
+    --kh-glow: color-mix(in srgb, #1456f0 14%, transparent);
+    --kh-ink: #1f2329;
+    --kh-shadow-sm: 0 1px 2px color-mix(in srgb, #1f2329 6%, transparent);
+    --kh-shadow-md: 0 12px 32px color-mix(in srgb, #1f2329 8%, transparent);
+    --kh-acrylic: color-mix(in srgb, #ffffff 78%, transparent);
+    --kh-acrylic-strong: color-mix(in srgb, #ffffff 88%, transparent);
+    --kh-acrylic-edge: color-mix(in srgb, #1f2329 8%, #ffffff);
+    --kh-acrylic-blur: 18px;
+    --kh-acrylic-saturate: 1.12;
+    --kh-highlight: inset 0 1px 0 color-mix(in srgb, #ffffff 72%, transparent);
     --kh-noise: url("./acrylic-noise.png");
     --kh-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
     --kh-ease: cubic-bezier(0.2, 0, 0, 1);
 
     --el-color-primary: var(--kh-primary);
-    --el-color-primary-light-3: #4ea3e4;
-    --el-color-primary-light-5: #7cbcf0;
-    --el-color-primary-light-7: #b3daf8;
-    --el-color-primary-light-8: #cce6fb;
-    --el-color-primary-light-9: #e5f3fd;
-    --el-color-primary-dark-2: #0e5aa3;
+    --el-color-primary-light-3: #4d7af4;
+    --el-color-primary-light-5: #7a9bf7;
+    --el-color-primary-light-7: #b3c6fb;
+    --el-color-primary-light-8: #cdd9fc;
+    --el-color-primary-light-9: #e8effe;
+    --el-color-primary-dark-2: #0d3ecc;
   }
 
   html,
@@ -103,12 +101,8 @@
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 54rem 40rem at 8% -6%, color-mix(in srgb, #3ba6f0 62%, transparent), transparent 62%),
-    radial-gradient(ellipse 46rem 36rem at 96% 4%, color-mix(in srgb, #2fd0e4 48%, transparent), transparent 58%),
-    radial-gradient(ellipse 42rem 34rem at 18% 88%, color-mix(in srgb, #7ad08a 32%, transparent), transparent 60%),
-    radial-gradient(ellipse 48rem 38rem at 82% 108%, color-mix(in srgb, #8ec8f8 55%, transparent), transparent 56%),
-    radial-gradient(ellipse 28rem 22rem at 48% 42%, color-mix(in srgb, #ffffff 40%, transparent), transparent 72%),
-    linear-gradient(180deg, #b9e0fb 0%, #e4f4ff 46%, #c5e8fb 100%);
+    radial-gradient(ellipse 42rem 28rem at 0% 0%, var(--kh-glow), transparent 70%),
+    var(--kh-bg);
 }
 
 .kh-shell > * {
@@ -121,33 +115,11 @@
 .metric-card,
 .soft-panel {
   position: relative;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, #ffffff 58%, transparent) 0%,
-      var(--kh-acrylic) 42%,
-      color-mix(in srgb, #6db4ea 30%, transparent) 100%
-    );
+  background: var(--kh-acrylic);
   backdrop-filter: blur(var(--kh-acrylic-blur)) saturate(var(--kh-acrylic-saturate));
   -webkit-backdrop-filter: blur(var(--kh-acrylic-blur)) saturate(var(--kh-acrylic-saturate));
   border: 1px solid var(--kh-acrylic-edge);
   box-shadow: var(--kh-highlight), var(--kh-shadow-sm);
-}
-
-.kh-acrylic::before,
-.linear-card::before,
-.metric-card::before,
-.soft-panel::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  height: 46%;
-  z-index: 1;
-  pointer-events: none;
-  border-radius: inherit;
-  background: linear-gradient(180deg, color-mix(in srgb, #ffffff 55%, transparent), transparent);
 }
 
 .kh-acrylic::after,
@@ -160,7 +132,7 @@
   z-index: 2;
   pointer-events: none;
   border-radius: inherit;
-  opacity: 0.055;
+  opacity: 0.03;
   mix-blend-mode: overlay;
   background-image: var(--kh-noise);
   background-size: 64px 64px;
@@ -355,51 +327,36 @@
 }
 
 .app-button-primary {
-  background: linear-gradient(180deg, #6ec2f7 0%, #1570c7 52%, #0d5aa8 100%);
-  border: 1px solid #0e5aa3;
+  background: var(--kh-primary);
+  border: 1px solid var(--kh-primary);
   color: #ffffff;
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, #ffffff 58%, transparent),
-    0 8px 18px var(--kh-glow);
+  box-shadow: none;
 }
 
 .app-button-primary:hover {
-  background: linear-gradient(180deg, #82ccf8 0%, #1a7ad4 52%, #0b4f96 100%);
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, #ffffff 62%, transparent),
-    0 10px 24px var(--kh-glow);
+  background: var(--kh-primary-strong);
+  border-color: var(--kh-primary-strong);
+  box-shadow: none;
 }
 
 .app-button-dark {
-  background: linear-gradient(180deg, #4a6f8a 0%, #14324c 100%);
+  background: var(--kh-ink);
   border: 1px solid var(--kh-ink);
   color: #ffffff;
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, #ffffff 22%, transparent),
-    var(--kh-shadow-sm);
+  box-shadow: none;
 }
 
 .app-button-ghost {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, #ffffff 72%, transparent),
-      color-mix(in srgb, #cfe8ff 42%, transparent)
-    );
-  backdrop-filter: blur(12px) saturate(1.6);
-  -webkit-backdrop-filter: blur(12px) saturate(1.6);
-  border: 1px solid var(--kh-acrylic-edge);
+  background: color-mix(in srgb, #ffffff 82%, transparent);
+  backdrop-filter: blur(12px) saturate(1.1);
+  -webkit-backdrop-filter: blur(12px) saturate(1.1);
+  border: 1px solid var(--kh-border);
   color: var(--kh-text-soft);
-  box-shadow: var(--kh-highlight);
+  box-shadow: none;
 }
 
 .app-button-ghost:hover {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, #ffffff 86%, transparent),
-      color-mix(in srgb, #d6edff 58%, transparent)
-    );
+  background: var(--kh-surface-solid);
   border-color: var(--kh-border-strong);
   color: var(--kh-text);
 }
@@ -410,13 +367,9 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background:
-    radial-gradient(circle at 30% 18%, rgba(255, 255, 255, 0.55), transparent 1.8rem),
-    linear-gradient(180deg, #6ec2f7 0%, #1570c7 55%, #0b4f96 100%);
+  background: var(--kh-primary);
   color: #ffffff;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.5),
-    0 8px 18px var(--kh-glow);
+  box-shadow: none;
 }
 
 .brand-mark::after {
@@ -519,20 +472,17 @@
 }
 
 .el-button--primary {
-  background: linear-gradient(180deg, #6ec2f7 0%, #1570c7 52%, #0d5aa8 100%) !important;
-  border-color: #0e5aa3 !important;
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, #ffffff 55%, transparent),
-    0 8px 18px var(--kh-glow);
+  background-color: var(--kh-primary) !important;
+  border-color: var(--kh-primary) !important;
+  box-shadow: none;
   transition:
     transform 140ms var(--kh-ease-out),
     background-color 160ms var(--kh-ease-out),
-    border-color 160ms var(--kh-ease-out),
-    box-shadow 160ms var(--kh-ease-out) !important;
+    border-color 160ms var(--kh-ease-out) !important;
 }
 .el-button--primary:hover {
-  background: linear-gradient(180deg, #82ccf8 0%, #1a7ad4 52%, #0b4f96 100%) !important;
-  border-color: #0b4f96 !important;
+  background-color: var(--kh-primary-strong) !important;
+  border-color: var(--kh-primary-strong) !important;
 }
 .el-button--primary:active {
   transform: scale(0.98);
@@ -540,31 +490,12 @@
 
 .el-card {
   position: relative;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, #ffffff 58%, transparent) 0%,
-      var(--kh-acrylic) 42%,
-      color-mix(in srgb, #6db4ea 30%, transparent) 100%
-    ) !important;
+  background: var(--kh-acrylic) !important;
   backdrop-filter: blur(var(--kh-acrylic-blur)) saturate(var(--kh-acrylic-saturate));
   -webkit-backdrop-filter: blur(var(--kh-acrylic-blur)) saturate(var(--kh-acrylic-saturate));
   border: 1px solid var(--kh-acrylic-edge) !important;
   color: var(--kh-text) !important;
   box-shadow: var(--kh-highlight), var(--kh-shadow-md) !important;
-}
-
-.el-card::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  height: 46%;
-  z-index: 1;
-  pointer-events: none;
-  border-radius: inherit;
-  background: linear-gradient(180deg, color-mix(in srgb, #ffffff 55%, transparent), transparent);
 }
 
 .el-card::after {
@@ -574,28 +505,23 @@
   z-index: 2;
   pointer-events: none;
   border-radius: inherit;
-  opacity: 0.055;
+  opacity: 0.03;
   mix-blend-mode: overlay;
   background-image: var(--kh-noise);
   background-size: 64px 64px;
 }
 
 .el-overlay {
-  background: color-mix(in srgb, #0f2740 28%, transparent) !important;
-  backdrop-filter: blur(10px) saturate(1.4);
-  -webkit-backdrop-filter: blur(10px) saturate(1.4);
+  background: color-mix(in srgb, #1f2329 36%, transparent) !important;
+  backdrop-filter: blur(8px) saturate(1.05);
+  -webkit-backdrop-filter: blur(8px) saturate(1.05);
 }
 
 .el-dialog,
 .el-drawer {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, #ffffff 70%, transparent) 0%,
-      var(--kh-acrylic-strong) 100%
-    ) !important;
-  backdrop-filter: blur(32px) saturate(2);
-  -webkit-backdrop-filter: blur(32px) saturate(2);
+  background: var(--kh-acrylic-strong) !important;
+  backdrop-filter: blur(24px) saturate(1.12);
+  -webkit-backdrop-filter: blur(24px) saturate(1.12);
   border: 1px solid var(--kh-acrylic-edge);
   box-shadow: var(--kh-highlight), var(--kh-shadow-md);
 }
@@ -686,11 +612,6 @@ summary:focus-visible {
     background-image: none !important;
   }
 
-  .kh-acrylic::before,
-  .linear-card::before,
-  .metric-card::before,
-  .soft-panel::before,
-  .el-card::before,
   .kh-acrylic::after,
   .linear-card::after,
   .metric-card::after,
